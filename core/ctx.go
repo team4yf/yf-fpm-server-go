@@ -26,6 +26,8 @@ func WrapCtx(fpm *Fpm, w http.ResponseWriter, request *http.Request) *Ctx {
 
 //JSON output the json
 func (c *Ctx) JSON(data interface{}) {
+	c.w.Header().Set("Content-Type", "application/json")
+	c.w.WriteHeader(http.StatusOK)
 	json.NewEncoder(c.w).Encode(data)
 }
 
