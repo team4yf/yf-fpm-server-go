@@ -3,26 +3,26 @@ package main
 import (
 	"fmt"
 
-	"github.com/team4yf/yf-fpm-server-go/core"
+	"github.com/team4yf/yf-fpm-server-go/fpm"
 	"github.com/team4yf/yf-fpm-server-go/handler"
 )
 
 func main() {
 
-	fpm := &core.Fpm{}
+	app := &fpm.Fpm{}
 
-	fpm.New()
+	app.New()
 
-	fpm.AddHook("BEFORE_INIT", func(f *core.Fpm) {
+	app.AddHook("BEFORE_INIT", func(f *fpm.Fpm) {
 		fmt.Println("run some hook")
 	}, 10)
 
-	fpm.Init()
+	app.Init()
 
-	fpm.BindHandler("/health", handler.Health).Methods("GET")
+	app.BindHandler("/health", handler.Health).Methods("GET")
 
-	fpm.BindHandler("/api", handler.API).Methods("POST")
+	app.BindHandler("/api", handler.API).Methods("POST")
 
-	fpm.Run(":9999")
+	app.Run(":9999")
 
 }

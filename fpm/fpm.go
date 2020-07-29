@@ -1,5 +1,5 @@
-//Package core the core fpm
-package core
+//Package fpm the core fpm
+package fpm
 
 import (
 	"log"
