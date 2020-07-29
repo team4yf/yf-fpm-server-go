@@ -1,0 +1,14 @@
+@host = http://localhost:9999
+
+### test api
+POST {{host}}/api
+Content-Type: application/json
+
+{
+    "method": "foo.bar",
+    "appkey": "abc",
+    "timestamp": 123,
+    "v":"1.0",
+    "param":{"a":1,"foo":"bar"},
+    "sign":"abc"
+}

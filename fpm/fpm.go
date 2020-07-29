@@ -2,22 +2,24 @@
 package fpm
 
 import (
+	"errors"
 	"log"
 	"net/http"
-	"sync"
+	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/team4yf/yf-fpm-server-go/ctx"
 )
 
 var (
-	registerLock   sync.Locker
 	registerEvents []HookHandler
+
+	errNoMethod = errors.New("No method defined")
 )
 
 //Register register some plugin
 func Register(event HookHandler) {
-	registerLock.Lock()
-	defer registerLock.Unlock()
 	if len(registerEvents) < 1 {
 		registerEvents = make([]HookHandler, 0)
 	}
@@ -34,6 +36,9 @@ type Fpm struct {
 
 	// the lifecycle hooks for
 	hooks map[string][]*Hook
+
+	// the biz modules
+	modules map[string]*BizModule
 }
 
 //HookHandler the hook handler
@@ -54,7 +59,7 @@ func NewHook(f HookHandler, p int) *Hook {
 }
 
 //Handler the bizHandler
-type Handler func(*Ctx)
+type Handler func(*ctx.Ctx, *Fpm)
 
 //New 初始化函数
 //路由加载
@@ -62,20 +67,53 @@ type Handler func(*Ctx)
 //加载中间件
 //执行init钩子函数
 // BEFORE_INIT -> AFTER_INIT -> BEFORE_START -> BEFORE_SHUTDOWN(not sure) -> AFTER_SHUTDOWN(not sure)
-func (fpm *Fpm) New() {
+func New() *Fpm {
+	fpm := &Fpm{}
 	fpm.mq = make(chan map[string]string, 1000)
 	fpm.routers = mux.NewRouter()
 	fpm.hooks = make(map[string][]*Hook, 0)
+	fpm.modules = make(map[string]*BizModule, 0)
 
 	fpm.loadPlugin()
-
+	return fpm
 }
 
 //Init run the init
 func (fpm *Fpm) Init() {
 	fpm.runHook("BEFORE_INIT")
+	fpm.BindHandler("/health", func(c *ctx.Ctx, _ *Fpm) {
+		c.JSON(map[string]interface{}{"Status": "UP"})
+	}).Methods("GET")
 
+	fpm.BindHandler("/api", api).Methods("POST")
 	fpm.runHook("AFTER_INIT")
+}
+
+func api(c *ctx.Ctx, fpm *Fpm) {
+	var data APIReq
+	var rsp APIRsp
+	rsp.Timestamp = time.Now().Unix()
+	if err := c.ParseBody(&data); err != nil {
+		rsp.Message = err.Error()
+		rsp.Errno = -1
+		rsp.Error = err
+		c.Fail(rsp)
+		return
+	}
+	method := data.Method
+
+	result, err := fpm.Execute(method, data.Param)
+	if err != nil {
+		rsp.Message = err.Error()
+		rsp.Errno = -1
+		rsp.Error = err
+		c.Fail(rsp)
+		return
+	}
+	rsp.Errno = 0
+
+	rsp.Data = result
+	c.JSON(rsp)
 }
 
 //Get get some key/val from the context
@@ -126,10 +164,31 @@ func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 	fpm.hooks[hookName] = hooks
 }
 
+//Execute 执行具体的业务函数
+func (fpm *Fpm) Execute(biz string, args *BizParam) (interface{}, error) {
+	bizPath := strings.Split(biz, ".")
+	moduleName := bizPath[0]
+	module, exists := fpm.modules[moduleName]
+	if !exists {
+		return nil, errNoMethod
+	}
+	bizName := strings.Join(bizPath[1:], ".")
+	handler, exists := (*module)[bizName]
+	if !exists {
+		return nil, errNoMethod
+	}
+	return handler(args)
+}
+
+//AddBizModule 添加业务函数组
+func (fpm *Fpm) AddBizModule(name string, module *BizModule) {
+	fpm.modules[name] = module
+}
+
 //BindHandler 绑定接口路由
 func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 	return fpm.routers.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
-		handler(WrapCtx(fpm, w, r))
+		handler(ctx.WrapCtx(w, r), fpm)
 	})
 }
 

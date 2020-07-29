@@ -1,4 +1,4 @@
-package fpm
+package ctx
 
 import (
 	"encoding/json"
@@ -9,16 +9,14 @@ import (
 
 //Ctx the content of the request
 type Ctx struct {
-	fpm     *Fpm
 	request *http.Request
 	w       http.ResponseWriter
 }
 
 //WrapCtx wrap the context with the w & request
-func WrapCtx(fpm *Fpm, w http.ResponseWriter, request *http.Request) *Ctx {
+func WrapCtx(w http.ResponseWriter, request *http.Request) *Ctx {
 
 	return &Ctx{
-		fpm:     fpm,
 		request: request,
 		w:       w,
 	}
@@ -39,6 +37,13 @@ func (c *Ctx) ParseBody(data interface{}) (err error) {
 		return
 	}
 	return
+}
+
+//Fail execute fail
+func (c *Ctx) Fail(err interface{}) {
+	c.w.Header().Set("Content-Type", "application/json")
+	c.w.WriteHeader(http.StatusOK)
+	json.NewEncoder(c.w).Encode(err)
 }
 
 //GetRequest output the json
