@@ -4,9 +4,25 @@ package core
 import (
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
+
+var (
+	registerLock   sync.Locker
+	registerEvents []HookHandler
+)
+
+//Register register some plugin
+func Register(event HookHandler) {
+	registerLock.Lock()
+	defer registerLock.Unlock()
+	if len(registerEvents) < 1 {
+		registerEvents = make([]HookHandler, 0)
+	}
+	registerEvents = append(registerEvents, event)
+}
 
 //Fpm the core type defination
 type Fpm struct {
@@ -74,7 +90,12 @@ func (fpm *Fpm) Set(key string, value interface{}) {
 
 //loadPlugin load the plugins
 func (fpm *Fpm) loadPlugin() {
-
+	if len(registerEvents) < 1 {
+		return
+	}
+	for _, event := range registerEvents {
+		event(fpm)
+	}
 }
 
 //GetConfig get the config from the configfile
