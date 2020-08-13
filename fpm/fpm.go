@@ -63,7 +63,7 @@ type Fpm struct {
 	modules map[string]*BizModule
 
 	// middlware chain
-	mwChain alice.Chain
+	mwChain *alice.Chain
 }
 
 //HookHandler the hook handler
@@ -259,7 +259,8 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (interface{}, error) {
 
 //Use add some middleware
 func (fpm *Fpm) Use(mw ...alice.Constructor) {
-	fpm.mwChain = alice.New(mw...)
+	chain := alice.New(mw...)
+	fpm.mwChain = &chain
 }
 
 //AddBizModule 添加业务函数组
@@ -272,7 +273,11 @@ func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		handler(ctx.WrapCtx(w, r), fpm)
 	}
-	return fpm.routers.Handle(url, fpm.mwChain.ThenFunc(f))
+	if fpm.mwChain != nil {
+		return fpm.routers.Handle(url, fpm.mwChain.ThenFunc(f))
+	}
+	return fpm.routers.HandleFunc(url, f)
+
 }
 
 //Run 启动程序
