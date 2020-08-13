@@ -3,6 +3,7 @@ package fpm
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -89,18 +90,26 @@ func NewHook(f HookHandler, p int) *Hook {
 //Handler the bizHandler
 type Handler func(*ctx.Ctx, *Fpm)
 
-//New 初始化函数
+//New 使用默认配置的构造函数
+func New() *Fpm {
+	return NewWithConfig("")
+}
+
+//NewWithConfig 初始化函数
 //路由加载
 //插件加载
 //加载中间件
 //执行init钩子函数
 // BEFORE_INIT -> AFTER_INIT -> BEFORE_START -> BEFORE_SHUTDOWN(not sure) -> AFTER_SHUTDOWN(not sure)
-func New() *Fpm {
+func NewWithConfig(configFile string) *Fpm {
 	if defaultInstance != nil {
 		return defaultInstance
 	}
 	//加载配置文件
-	config.Init("")
+	if err := config.Init(configFile); err != nil {
+		fmt.Println("Init config file error: ", configFile)
+		panic(err)
+	}
 
 	fpm := &Fpm{}
 	fpm.v = version.Version
