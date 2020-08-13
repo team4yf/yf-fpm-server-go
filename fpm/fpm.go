@@ -54,7 +54,7 @@ type Fpm struct {
 	routers *mux.Router
 
 	// the message queue, for pub and sub
-	mq chan map[string]string
+	mq map[string][]MessageHandler
 
 	// the lifecycle hooks for
 	hooks map[string][]*Hook
@@ -68,6 +68,9 @@ type Fpm struct {
 
 //HookHandler the hook handler
 type HookHandler func(*Fpm)
+
+//MessageHandler message handler
+type MessageHandler func(topic string, data interface{})
 
 //Hook the hook handler
 type Hook struct {
@@ -103,7 +106,7 @@ func New() *Fpm {
 	fpm.v = version.Version
 	fpm.buildAt = version.BuildAt
 
-	fpm.mq = make(chan map[string]string, 1000)
+	fpm.mq = make(map[string][]MessageHandler)
 	fpm.routers = mux.NewRouter()
 	fpm.hooks = make(map[string][]*Hook, 0)
 	fpm.modules = make(map[string]*BizModule, 0)
@@ -156,6 +159,29 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 
 	rsp.Data = result
 	c.JSON(rsp)
+}
+
+//Publish publish a message
+func (fpm *Fpm) Publish(topic string, data interface{}) {
+	handlers, ok := fpm.mq[topic]
+	if !ok {
+		return
+	}
+	go func() {
+		for _, handler := range handlers {
+			handler(topic, data)
+		}
+	}()
+}
+
+//Subscribe subscribe a topic
+func (fpm *Fpm) Subscribe(topic string, f MessageHandler) {
+	handlers, ok := fpm.mq[topic]
+	if !ok {
+		handlers = make([]MessageHandler, 0)
+	}
+	handlers = append(handlers, f)
+	fpm.mq[topic] = handlers
 }
 
 //Get get some key/val from the context
