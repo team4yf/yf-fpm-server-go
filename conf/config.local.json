@@ -1,0 +1,35 @@
+{
+    "mode": "release",
+    "domain": "",
+    "version": "",
+    "addr": "9090",
+    "name": "fpm-server",
+    "log":{
+        "writers": "file,stdout",
+        "level": "DEBUG",
+        "logger_file": "./logs/app.log",
+        "logger_warn_file": "./logs/app.wf.log",
+        "logger_error_file": "./logs/app.err.log",
+        "log_format_text":true,
+        "rollingPolicy": "daily",
+        "log_rotate_date": 1,
+        "log_rotate_size": 1,
+        "log_backup_count": 7
+    },
+    "db": {
+        "engine": "postgres",
+        "user": "localdev",
+        "password": "Start123",
+        "host": "localhost",
+        "port": 5432,
+        "database": "localtest",
+        "charset": "utf8",
+        "showSql": true
+    },
+    "redis": {
+        "addr":"localhost:6379",
+        "passwd":"admin123",
+        "db": 1,
+        "pool": 10
+    }
+}

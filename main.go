@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/team4yf/yf-fpm-server-go/fpm"
+	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 
 	_ "github.com/team4yf/yf-fpm-server-go/plugin"
 )
@@ -16,6 +17,10 @@ func main() {
 
 	app.Init()
 
+	if app.HasConfig("db") {
+		dbConfig := app.GetConfig("db")
+		log.Debugf("dbconfig %+v", dbConfig)
+	}
 	bizModule := make(fpm.BizModule, 0)
 	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
 		data = 1
