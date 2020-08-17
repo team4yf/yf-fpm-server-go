@@ -64,6 +64,11 @@ func NewLogger(cfg *Config, loggerInstance int) error {
 	}
 }
 
+// GetLogger get the ref of the logger
+func GetLogger() Logger {
+	return log
+}
+
 // Debug logger
 func Debug(args ...interface{}) {
 	log.Debug(args...)

@@ -4,7 +4,6 @@ package fpm
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
+	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 	"github.com/team4yf/yf-fpm-server-go/version"
 )
 
@@ -65,6 +65,9 @@ type Fpm struct {
 
 	// middlware chain
 	mwChain *alice.Chain
+
+	// the logger
+	Logger log.Logger
 }
 
 //HookHandler the hook handler
@@ -112,6 +115,7 @@ func NewWithConfig(configFile string) *Fpm {
 	}
 
 	fpm := &Fpm{}
+	fpm.Logger = log.GetLogger()
 	fpm.v = version.Version
 	fpm.buildAt = version.BuildAt
 
