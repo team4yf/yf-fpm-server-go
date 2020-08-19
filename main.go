@@ -21,6 +21,17 @@ func main() {
 		dbConfig := app.GetConfig("db")
 		log.Debugf("dbconfig %+v", dbConfig)
 	}
+
+	app.AddFilter("foo.bar", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
+		log.Debugf("before %s, args: %v", biz, *args)
+		return true, nil
+	}, 1)
+
+	app.AddFilter("foo.bar", "after", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
+		log.Debugf("after %s, args: %v", biz, *args)
+		return true, nil
+	}, 1)
+
 	bizModule := make(fpm.BizModule, 0)
 	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
 		data = 1

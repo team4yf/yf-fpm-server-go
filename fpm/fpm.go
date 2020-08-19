@@ -60,6 +60,9 @@ type Fpm struct {
 	// the lifecycle hooks for
 	hooks map[string][]*Hook
 
+	// the biz filters for
+	filters map[string][]*Filter
+
 	// the biz modules
 	modules map[string]*BizModule
 
@@ -73,6 +76,9 @@ type Fpm struct {
 //HookHandler the hook handler
 type HookHandler func(*Fpm)
 
+//FilterHandler the hook handler
+type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
+
 //MessageHandler message handler
 type MessageHandler func(topic string, data interface{})
 
@@ -82,9 +88,23 @@ type Hook struct {
 	p int
 }
 
+//Filter the filter handler
+type Filter struct {
+	f FilterHandler
+	p int
+}
+
 //NewHook create a new hook
 func NewHook(f HookHandler, p int) *Hook {
 	return &Hook{
+		f: f,
+		p: p,
+	}
+}
+
+//NewFilter create a new filter
+func NewFilter(f FilterHandler, p int) *Filter {
+	return &Filter{
 		f: f,
 		p: p,
 	}
@@ -122,6 +142,7 @@ func NewWithConfig(configFile string) *Fpm {
 	fpm.mq = make(map[string][]MessageHandler)
 	fpm.routers = mux.NewRouter()
 	fpm.hooks = make(map[string][]*Hook, 0)
+	fpm.filters = make(map[string][]*Filter, 0)
 	fpm.modules = make(map[string]*BizModule, 0)
 
 	fpm.loadPlugin()
@@ -244,6 +265,31 @@ func (fpm *Fpm) runHook(hookName string) {
 	}
 }
 
+//runFilter 执行过滤器函数
+func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam) (bool, error) {
+	filters, exists := fpm.filters[filterName]
+	if !exists || len(filters) < 1 {
+		//No filters
+		return true, nil
+	}
+	for _, filter := range filters {
+		if ok, err := filter.f(fpm, biz, args); !ok {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+//AddFilter 增加一个钩子函数
+func (fpm *Fpm) AddFilter(filterName, event string, handler FilterHandler, priority int) {
+	filters, exists := fpm.filters["_"+filterName+"_"+event]
+	if !exists {
+		filters = make([]*Filter, 0)
+	}
+	filters = append(filters, NewFilter(handler, priority))
+	fpm.filters["_"+filterName+"_"+event] = filters
+}
+
 //AddHook 增加一个钩子函数
 func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 	hooks, exists := fpm.hooks[hookName]
@@ -256,6 +302,9 @@ func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 
 //Execute 执行具体的业务函数
 func (fpm *Fpm) Execute(biz string, args *BizParam) (interface{}, error) {
+	if ok, err := fpm.runFilter("_"+biz+"_before", biz, args); !ok {
+		return nil, err
+	}
 	bizPath := strings.Split(biz, ".")
 	moduleName := bizPath[0]
 	module, exists := fpm.modules[moduleName]
@@ -267,7 +316,15 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (interface{}, error) {
 	if !exists {
 		return nil, errNoMethod
 	}
-	return handler(args)
+	result, err := handler(args)
+	if err != nil {
+		return nil, err
+	}
+	(*args)["__result__"] = result
+	if ok, err := fpm.runFilter("_"+biz+"_after", biz, args); !ok {
+		log.Errorf("run _%s_after error: %v", biz, err)
+	}
+	return result, nil
 }
 
 //Use add some middleware
