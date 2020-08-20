@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
 )
 
@@ -20,6 +21,29 @@ func WrapCtx(w http.ResponseWriter, request *http.Request) *Ctx {
 		request: request,
 		w:       w,
 	}
+}
+
+//Param get the url path from the request
+func (c *Ctx) Param(p string) string {
+	vars := mux.Vars(c.request)
+	return vars[p]
+}
+
+//Query get the query string of the url
+func (c *Ctx) Query(p string) string {
+	q := c.request.URL.Query()
+	return q.Get(p)
+
+}
+
+//QueryDefault get the querystring of the url, return default value if nil
+func (c *Ctx) QueryDefault(p, dfv string) string {
+	q := c.request.URL.Query()
+	data := q.Get(p)
+	if data == "" {
+		return dfv
+	}
+	return data
 }
 
 //JSON output the json

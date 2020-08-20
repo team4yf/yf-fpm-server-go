@@ -165,6 +165,7 @@ func (fpm *Fpm) Init() {
 
 	fpm.Use(RecoverMiddleware)
 	fpm.BindHandler("/api", api).Methods("POST")
+	fpm.BindHandler("/webhook/{method}", webhook).Methods("POST")
 	fpm.runHook("AFTER_INIT")
 }
 
@@ -193,6 +194,28 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 
 	rsp.Data = result
 	c.JSON(rsp)
+}
+
+func webhook(c *ctx.Ctx, fpm *Fpm) {
+
+	go func() {
+		method := c.Param("method")
+		body := &BizParam{}
+		if err := c.ParseBody(&body); err != nil {
+			fpm.Publish("#webhook/error/"+method, err)
+			return
+		}
+		result, err := fpm.Execute(method, body)
+		if err != nil {
+			fpm.Publish("#webhook/error/"+method, err)
+			return
+		}
+		fpm.Publish("#webhook/success/"+method, result)
+	}()
+
+	c.JSON(map[string]interface{}{
+		"errno": 0,
+	})
 }
 
 //Publish publish a message
@@ -328,9 +351,10 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (interface{}, error) {
 }
 
 //Use add some middleware
-func (fpm *Fpm) Use(mw ...alice.Constructor) {
-	chain := alice.New(mw...)
-	fpm.mwChain = &chain
+func (fpm *Fpm) Use(mws ...func(next http.Handler) http.Handler) {
+	for _, mw := range mws {
+		fpm.routers.Use(mw)
+	}
 }
 
 //AddBizModule 添加业务函数组

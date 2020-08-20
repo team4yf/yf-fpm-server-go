@@ -12,3 +12,18 @@ Content-Type: application/json
     "param":{"a":1,"foo":"bar"},
     "sign":"abc"
 }
+
+
+
+### test webhook
+POST {{host}}/webhook/foo.bar
+Content-Type: application/json
+
+{
+    "method": "foo.bar",
+    "appkey": "abc",
+    "timestamp": 123,
+    "v":"1.0",
+    "param":{"a":1,"foo":"bar"},
+    "sign":"abc"
+}
