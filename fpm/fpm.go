@@ -2,13 +2,15 @@
 package fpm
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
 	"time"
 
-	"github.com/justinas/alice"
 	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
@@ -65,9 +67,6 @@ type Fpm struct {
 
 	// the biz modules
 	modules map[string]*BizModule
-
-	// middlware chain
-	mwChain *alice.Chain
 
 	// the logger
 	Logger log.Logger
@@ -166,6 +165,7 @@ func (fpm *Fpm) Init() {
 	fpm.Use(RecoverMiddleware)
 	fpm.BindHandler("/api", api).Methods("POST")
 	fpm.BindHandler("/webhook/{method}", webhook).Methods("POST")
+	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	fpm.runHook("AFTER_INIT")
 }
 
@@ -367,17 +367,51 @@ func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		handler(ctx.WrapCtx(w, r), fpm)
 	}
-	if fpm.mwChain != nil {
-		return fpm.routers.Handle(url, fpm.mwChain.ThenFunc(f))
-	}
 	return fpm.routers.HandleFunc(url, f)
 
 }
 
 //Run 启动程序
-func (fpm *Fpm) Run(addr string) {
+func (fpm *Fpm) Run() {
 	fpm.runHook("BEFORE_START")
 	fpm.starttime = time.Now()
-	log.Fatal(http.ListenAndServe(addr, fpm.routers))
+	addr := fpm.GetConfig("addr").(string)
+	srv := &http.Server{
+		Handler: fpm.routers,
+		Addr:    addr,
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		IdleTimeout:  time.Second * 30,
+	}
+
+	wait := time.Second * 30
+
+	// Run our server in a goroutine so that it doesn't block.
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	// Optionally, you could run srv.Shutdown in a goroutine and block on
+	// <-ctx.Done() if your application should wait for other services
+	// to finalize based on context cancellation.
+	log.Info("shutting down")
+	os.Exit(0)
 
 }

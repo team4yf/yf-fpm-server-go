@@ -1,4 +1,4 @@
-@host = http://localhost:9999
+@host = http://localhost:9090
 
 ### test api
 POST {{host}}/api

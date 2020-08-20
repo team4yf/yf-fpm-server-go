@@ -2,7 +2,7 @@
     "mode": "release",
     "domain": "",
     "version": "",
-    "addr": "9090",
+    "addr": ":9090",
     "name": "fpm-server",
     "log":{
         "writers": "file,stdout",

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"time"
+
 	"github.com/team4yf/yf-fpm-server-go/fpm"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
-
 	_ "github.com/team4yf/yf-fpm-server-go/plugin"
 )
 
@@ -34,11 +35,12 @@ func main() {
 
 	bizModule := make(fpm.BizModule, 0)
 	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
+		time.Sleep(10 * time.Second)
 		data = 1
 		return
 	}
 	app.AddBizModule("foo", &bizModule)
 
-	app.Run(":9999")
+	app.Run()
 
 }
