@@ -9,13 +9,6 @@ import (
 	tnet "github.com/toolkits/net"
 )
 
-//RespJSON the common json
-type RespJSON struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
 var (
 	once     sync.Once
 	clientIP = "127.0.0.1"
@@ -41,27 +34,6 @@ func GetLocalIP() string {
 	return clientIP
 }
 
-//CutBigIntSlice cut long int slice to [][] slice
-func CutBigIntSlice(origin []int, size int) (desc [][]int) {
-	total := len(origin)
-	rows := total / size
-
-	if total%size > 0 {
-		rows++
-	}
-	for i := 0; i < rows; i++ {
-		desc = append(desc, []int{})
-	}
-	for i, d := range origin {
-		row := (i + 1) / size
-		if (i+1)%size == 0 {
-			row--
-		}
-		desc[row] = append(desc[row], d)
-	}
-	return
-}
-
 //JSON2String convert the json object to string
 func JSON2String(j interface{}) (str string) {
 	bytes, err := json.Marshal(j)
@@ -69,6 +41,18 @@ func JSON2String(j interface{}) (str string) {
 		return "{}"
 	}
 	str = (string)(bytes)
+	return
+}
+
+//Interface2Struct convert the json object to struct
+func Interface2Struct(j interface{}, dest interface{}) (err error) {
+	bytes, err := json.Marshal(j)
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(bytes, dest); err != nil {
+		return
+	}
 	return
 }
 
@@ -102,16 +86,4 @@ func GenUUID() string {
 // 		return requestID
 // 	}
 // 	return ""
-// }
-
-// SendResponse 返回json
-// func SendResponse(c *gin.Context, err error, data interface{}) {
-// 	code, message := errno.DecodeErr(err)
-
-// 	// always return http.StatusOK
-// 	c.JSON(http.StatusOK, RespJSON{
-// 		Code:    code,
-// 		Message: message,
-// 		Data:    data,
-// 	})
 // }

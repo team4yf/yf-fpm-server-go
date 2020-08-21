@@ -17,6 +17,7 @@ import (
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
+	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
 	"github.com/team4yf/yf-fpm-server-go/version"
 )
 
@@ -267,12 +268,24 @@ func (fpm *Fpm) loadPlugin() {
 
 //HasConfig return true if config in the configfile
 func (fpm *Fpm) HasConfig(key string) bool {
-	return viper.InConfig(key)
+	return viper.IsSet(key)
 }
 
 //GetConfig get the config from the configfile
 func (fpm *Fpm) GetConfig(key string) interface{} {
 	return viper.Get(key)
+}
+
+//FetchConfig fetch config to the c
+func (fpm *Fpm) FetchConfig(key string, c interface{}) error {
+	if !viper.IsSet(key) {
+		return errors.New("config: " + key + " not defined")
+	}
+
+	if err := utils.Interface2Struct(viper.Get(key), &c); err != nil {
+		return err
+	}
+	return nil
 }
 
 //runHook 执行钩子函数

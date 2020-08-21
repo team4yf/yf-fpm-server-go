@@ -8,6 +8,17 @@ import (
 	_ "github.com/team4yf/yf-fpm-server-go/plugin"
 )
 
+type DBSetting struct {
+	Engine   string
+	User     string
+	Password string
+	Host     string
+	Port     int
+	Database string
+	Charset  string
+	ShowSQL  bool
+}
+
 func main() {
 
 	app := fpm.New()
@@ -19,7 +30,9 @@ func main() {
 	app.Init()
 
 	if app.HasConfig("db") {
-		dbConfig := app.GetConfig("db")
+		var dbConfig DBSetting
+		app.FetchConfig("db", &dbConfig)
+
 		log.Debugf("dbconfig %+v", dbConfig)
 	}
 
