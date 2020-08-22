@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
+	"github.com/team4yf/yf-fpm-server-go/middleware"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
 	"github.com/team4yf/yf-fpm-server-go/version"
@@ -71,6 +72,9 @@ type Fpm struct {
 
 	// the logger
 	Logger log.Logger
+
+	//appInfo 
+	appInfo *appInfo
 }
 
 //HookHandler the hook handler
@@ -81,6 +85,21 @@ type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
 
 //MessageHandler message handler
 type MessageHandler func(topic string, data interface{})
+
+//appInfo 
+//"mode": "release",
+// "domain": "",
+// "version": "",
+// "addr": ":9090",
+// "name": "fpm-server",
+type appInfo struct {
+	Mode string
+	Domain string
+	Version string
+	Addr string
+	Name string
+
+}
 
 //Hook the hook handler
 type Hook struct {
@@ -144,6 +163,11 @@ func NewWithConfig(configFile string) *Fpm {
 	fpm.hooks = make(map[string][]*Hook, 0)
 	fpm.filters = make(map[string][]*Filter, 0)
 	fpm.modules = make(map[string]*BizModule, 0)
+	fpm.appInfo = &appInfo{}
+
+	if err := viper.Unmarshal(&(fpm.appInfo)); err != nil {
+		panic(err)
+	}
 
 	fpm.loadPlugin()
 	defaultInstance = fpm
@@ -163,11 +187,15 @@ func (fpm *Fpm) Init() {
 		c.JSON(map[string]interface{}{"Status": "UP", "StartAt": fpm.starttime, "version": fpm.v, "buildAt": fpm.buildAt})
 	}).Methods("GET")
 
-	fpm.Use(RecoverMiddleware)
+	fpm.Use(middleware.Recover)
 	fpm.BindHandler("/api", api).Methods("POST")
 	fpm.BindHandler("/webhook/{method}", webhook).Methods("POST")
 	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	fpm.runHook("AFTER_INIT")
+}
+
+func (fpm *Fpm) GetAppInfo() *appInfo{
+	return fpm.appInfo
 }
 
 func api(c *ctx.Ctx, fpm *Fpm) {
@@ -388,7 +416,12 @@ func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 func (fpm *Fpm) Run() {
 	fpm.runHook("BEFORE_START")
 	fpm.starttime = time.Now()
-	addr := fpm.GetConfig("addr").(string)
+	addr := fpm.appInfo.Addr
+	if addr == "" {
+		addr = ":9090"
+	}else if !strings.HasPrefix(addr, ":") {
+		addr = ":" + addr
+	}
 	srv := &http.Server{
 		Handler: fpm.routers,
 		Addr:    addr,
