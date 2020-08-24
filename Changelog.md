@@ -1,5 +1,11 @@
 ## Changelog
 
+#### August 25 v0.1.9
+
+Feature:
+- add cache interface
+- offer a redis plugin `fpm-go-plugin-redis` todo `fpm-go-plugin-leveldb`
+
 #### August 20 v0.1.5
 
 Feature:

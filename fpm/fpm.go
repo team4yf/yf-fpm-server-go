@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
+	"github.com/team4yf/yf-fpm-server-go/pkg/cache"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
 	"github.com/team4yf/yf-fpm-server-go/version"
@@ -71,6 +72,9 @@ type Fpm struct {
 
 	// the logger
 	Logger log.Logger
+
+	// the cache instance
+	cacher cache.Cache
 }
 
 //HookHandler the hook handler
@@ -240,6 +244,19 @@ func (fpm *Fpm) Subscribe(topic string, f MessageHandler) {
 	}
 	handlers = append(handlers, f)
 	fpm.mq[topic] = handlers
+}
+
+//SetCacher set the instance of cache
+func (fpm *Fpm) SetCacher(c cache.Cache) {
+	fpm.cacher = c
+}
+
+//GetCacher get the instance of cache
+func (fpm *Fpm) GetCacher() (cache.Cache, bool) {
+	if fpm.cacher == nil {
+		return nil, false
+	}
+	return fpm.cacher, true
 }
 
 //Get get some key/val from the context
