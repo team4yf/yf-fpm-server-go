@@ -25,3 +25,10 @@ type Cache interface {
 
 	SafetyIncr(key string, step int64) (bool, error)
 }
+
+//SyncLocker a sync locker interface
+type SyncLocker interface {
+	Cache
+	GetLock(key string, expire time.Duration) bool
+	ReleaseLock(key string) error
+}
