@@ -1,5 +1,7 @@
 package fpm
 
+import "github.com/team4yf/yf-fpm-server-go/pkg/utils"
+
 //APIReq api 请求体
 type APIReq struct {
 	Method    string    `json:"method"`
@@ -21,6 +23,10 @@ type APIRsp struct {
 
 //BizParam 业务的请求参数
 type BizParam map[string]interface{}
+
+func (p *BizParam) Convert(obj interface{}) error {
+	return utils.Interface2Struct(p, &obj)
+}
 
 //BizHandler 具体的业务处理函数
 type BizHandler func(*BizParam) (interface{}, error)

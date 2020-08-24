@@ -16,14 +16,9 @@ Content-Type: application/json
 
 
 ### test webhook
-POST {{host}}/webhook/foo.bar
+POST {{host}}/webhook/test/foo/foo.bar
 Content-Type: application/json
 
 {
-    "method": "foo.bar",
-    "appkey": "abc",
-    "timestamp": 123,
-    "v":"1.0",
-    "param":{"a":1,"foo":"bar"},
     "sign":"abc"
 }

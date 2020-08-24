@@ -3,7 +3,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSHA256(t *testing.T) {

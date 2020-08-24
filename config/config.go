@@ -25,6 +25,17 @@ func Init(cfg string) error {
 	if err := c.initConfig(); err != nil {
 		return err
 	}
+	viper.SetDefault("mode", "debug")
+	viper.SetDefault("log.writers", "stdout")
+	viper.SetDefault("log.level", "DEBUG")
+	viper.SetDefault("log.logger_file", "./logs/app.log")
+	viper.SetDefault("log.logger_warn_file", "./logs/app.warn.log")
+	viper.SetDefault("log.logger_error_file", "./logs/app.err.log")
+	viper.SetDefault("log.log_format_text", true)
+	viper.SetDefault("log.rollingPolicy", "daily")
+	viper.SetDefault("log.log_rotate_date", 1)
+	viper.SetDefault("log.log_rotate_size", 1)
+	viper.SetDefault("log.log_backup_count", 7)
 	// 初始化日志包
 	c.initLog()
 	return nil
