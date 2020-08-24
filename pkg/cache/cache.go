@@ -28,7 +28,6 @@ type Cache interface {
 
 //SyncLocker a sync locker interface
 type SyncLocker interface {
-	Cache
 	GetLock(key string, expire time.Duration) bool
 	ReleaseLock(key string) error
 }

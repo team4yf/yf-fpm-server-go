@@ -76,6 +76,10 @@ type Fpm struct {
 
 	// the cache instance
 	cacher cache.Cache
+
+	// the distribute locker
+	distributeLocker cache.SyncLocker
+
 	//appInfo
 	appInfo *AppInfo
 }
@@ -288,6 +292,19 @@ func (fpm *Fpm) GetCacher() (cache.Cache, bool) {
 		return nil, false
 	}
 	return fpm.cacher, true
+}
+
+//SetDistributeLocker set the instance of Distribute Locker
+func (fpm *Fpm) SetDistributeLocker(l cache.SyncLocker) {
+	fpm.distributeLocker = l
+}
+
+//GetDistributeLocker get the instance of Distribute Locker
+func (fpm *Fpm) GetDistributeLocker() (cache.SyncLocker, bool) {
+	if fpm.distributeLocker == nil {
+		return nil, false
+	}
+	return fpm.distributeLocker, true
 }
 
 //Get get some key/val from the context
