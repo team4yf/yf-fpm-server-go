@@ -36,6 +36,12 @@ func (c *Ctx) Query(p string) string {
 
 }
 
+//GetHeader get data from the header
+func (c *Ctx) GetHeader(k string) string {
+	data := c.request.Header.Get(k)
+	return data
+}
+
 //QueryDefault get the querystring of the url, return default value if nil
 func (c *Ctx) QueryDefault(p, dfv string) string {
 	q := c.request.URL.Query()

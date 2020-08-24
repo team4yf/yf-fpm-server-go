@@ -73,8 +73,8 @@ type Fpm struct {
 	// the logger
 	Logger log.Logger
 
-	//appInfo 
-	appInfo *appInfo
+	//appInfo
+	appInfo *AppInfo
 }
 
 //HookHandler the hook handler
@@ -86,19 +86,18 @@ type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
 //MessageHandler message handler
 type MessageHandler func(topic string, data interface{})
 
-//appInfo 
+//AppInfo the basic config of the app
 //"mode": "release",
 // "domain": "",
 // "version": "",
 // "addr": ":9090",
 // "name": "fpm-server",
-type appInfo struct {
-	Mode string
-	Domain string
+type AppInfo struct {
+	Mode    string
+	Domain  string
 	Version string
-	Addr string
-	Name string
-
+	Addr    string
+	Name    string
 }
 
 //Hook the hook handler
@@ -163,7 +162,7 @@ func NewWithConfig(configFile string) *Fpm {
 	fpm.hooks = make(map[string][]*Hook, 0)
 	fpm.filters = make(map[string][]*Filter, 0)
 	fpm.modules = make(map[string]*BizModule, 0)
-	fpm.appInfo = &appInfo{}
+	fpm.appInfo = &AppInfo{}
 
 	if err := viper.Unmarshal(&(fpm.appInfo)); err != nil {
 		panic(err)
@@ -184,17 +183,22 @@ func (fpm *Fpm) Init() {
 	fpm.runHook("BEFORE_INIT")
 
 	fpm.BindHandler("/health", func(c *ctx.Ctx, _ *Fpm) {
-		c.JSON(map[string]interface{}{"Status": "UP", "StartAt": fpm.starttime, "version": fpm.v, "buildAt": fpm.buildAt})
+		c.JSON(map[string]interface{}{"status": "UP", "startAt": fpm.starttime, "version": fpm.v, "buildAt": fpm.buildAt})
+	}).Methods("GET")
+
+	fpm.BindHandler("/ping", func(c *ctx.Ctx, _ *Fpm) {
+		c.JSON(map[string]interface{}{"status": "UP", "timestamp": time.Now().Unix()})
 	}).Methods("GET")
 
 	fpm.Use(middleware.Recover)
 	fpm.BindHandler("/api", api).Methods("POST")
-	fpm.BindHandler("/webhook/{method}", webhook).Methods("POST")
+	fpm.BindHandler("/webhook/{upstream}/{event}/{method}", webhook).Methods("POST")
 	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	fpm.runHook("AFTER_INIT")
 }
 
-func (fpm *Fpm) GetAppInfo() *appInfo{
+//GetAppInfo get the basic info of the app from the config
+func (fpm *Fpm) GetAppInfo() *AppInfo {
 	return fpm.appInfo
 }
 
@@ -227,19 +231,19 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 
 func webhook(c *ctx.Ctx, fpm *Fpm) {
 
+	upstream := c.Param("upstream")
+	event := c.Param("event")
+	method := c.Param("method")
+
+	body := make(map[string]interface{})
+	if err := c.ParseBody(&body); err != nil {
+		c.Fail(err)
+		return
+	}
+
 	go func() {
-		method := c.Param("method")
-		body := &BizParam{}
-		if err := c.ParseBody(&body); err != nil {
-			fpm.Publish("#webhook/error/"+method, err)
-			return
-		}
-		result, err := fpm.Execute(method, body)
-		if err != nil {
-			fpm.Publish("#webhook/error/"+method, err)
-			return
-		}
-		fpm.Publish("#webhook/success/"+method, result)
+		body["url_data"] = method
+		fpm.Publish(fmt.Sprintf("#webhook/%s/%s", upstream, event), body)
 	}()
 
 	c.JSON(map[string]interface{}{
@@ -419,7 +423,7 @@ func (fpm *Fpm) Run() {
 	addr := fpm.appInfo.Addr
 	if addr == "" {
 		addr = ":9090"
-	}else if !strings.HasPrefix(addr, ":") {
+	} else if !strings.HasPrefix(addr, ":") {
 		addr = ":" + addr
 	}
 	srv := &http.Server{
@@ -440,6 +444,7 @@ func (fpm *Fpm) Run() {
 		}
 	}()
 
+	fpm.runHook("AFTER_START")
 	c := make(chan os.Signal, 1)
 	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
 	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.

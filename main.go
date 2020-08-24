@@ -2,6 +2,7 @@ package main
 
 import (
 	"time"
+
 	"github.com/pkg/errors"
 	"github.com/team4yf/yf-fpm-server-go/fpm"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
@@ -20,10 +21,9 @@ type DBSetting struct {
 }
 
 type testBody struct {
-	Foo string
+	Foo  string
 	Shit string
 }
-
 
 func main() {
 
@@ -36,7 +36,7 @@ func main() {
 	app.Init()
 
 	p := &fpm.BizParam{
-		"foo": "bar",
+		"foo":  "bar",
 		"shit": "damn",
 	}
 
@@ -61,6 +61,10 @@ func main() {
 		log.Debugf("after %s, args: %v", biz, *args)
 		return true, nil
 	}, 1)
+
+	app.Subscribe("#webhook/test/foo", func(_ string, data interface{}) {
+		log.Debugf("webhook: %+v", data)
+	})
 
 	bizModule := make(fpm.BizModule, 0)
 	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {

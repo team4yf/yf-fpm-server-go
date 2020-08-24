@@ -1,5 +1,14 @@
 ## Changelog
 
+#### August 22 v0.1.8
+
+Feature:
+- add default config for logger & addr, the log & addr node for config is not nessery
+    - the default log output is `STDOUT`, the default addr is `:9090`
+- add `GetHeader(string) string`  for fpm.Ctx
+- change the `webhook` url to `/webhook/:upstream/:event/:data`
+- add `ping` api
+
 #### August 20 v0.1.5
 
 Feature:
