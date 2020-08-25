@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
+	"github.com/team4yf/yf-fpm-server-go/internal/db"
 	"github.com/team4yf/yf-fpm-server-go/middleware"
 	"github.com/team4yf/yf-fpm-server-go/pkg/cache"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
@@ -82,6 +83,9 @@ type Fpm struct {
 
 	//appInfo
 	appInfo *AppInfo
+
+	//database interface
+	database map[string]db.Database
 }
 
 //HookHandler the hook handler
@@ -169,7 +173,14 @@ func NewWithConfig(configFile string) *Fpm {
 	fpm.hooks = make(map[string][]*Hook, 0)
 	fpm.filters = make(map[string][]*Filter, 0)
 	fpm.modules = make(map[string]*BizModule, 0)
-	fpm.appInfo = &AppInfo{}
+	fpm.database = make(map[string]db.Database, 0)
+	fpm.appInfo = &AppInfo{
+		Name:    "yf-fpm-server-go",
+		Mode:    "debug",
+		Domain:  "localhost",
+		Version: version.Version,
+		Addr:    ":9090",
+	}
 
 	if err := viper.Unmarshal(&(fpm.appInfo)); err != nil {
 		panic(err)
@@ -319,6 +330,20 @@ func Get(key string, dftVal interface{}) interface{} {
 //Set set a key/val item into the context
 func Set(key string, value interface{}) {
 	tempMapData[key] = value
+}
+
+//GetDatabase get some key/val from the context
+func (fpm *Fpm) GetDatabase(name string) (db.Database, bool) {
+	val, ok := fpm.database[name]
+	if !ok {
+		return nil, false
+	}
+	return val, true
+}
+
+//SetDatabase set a db interface
+func (fpm *Fpm) SetDatabase(name string, db db.Database) {
+	fpm.database[name] = db
 }
 
 //loadPlugin load the plugins

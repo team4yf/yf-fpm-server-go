@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/team4yf/yf-fpm-server-go/fpm"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
-	_ "github.com/team4yf/yf-fpm-server-go/plugin"
 )
 
 type DBSetting struct {

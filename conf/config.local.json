@@ -1,9 +1,4 @@
 {
-    "mode": "release",
-    "domain": "",
-    "version": "",
-    "addr": ":9090",
-    "name": "fpm-server",
     "db": {
         "engine": "postgres",
         "user": "localdev",
@@ -13,11 +8,5 @@
         "database": "localtest",
         "charset": "utf8",
         "showSql": true
-    },
-    "redis": {
-        "addr":"localhost:6379",
-        "passwd":"admin123",
-        "db": 1,
-        "pool": 10
     }
 }
