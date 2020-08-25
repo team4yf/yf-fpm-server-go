@@ -75,15 +75,3 @@ func GenUUID() string {
 	u, _ := uuid.NewRandom()
 	return u.String()
 }
-
-// GetReqID 获取请求中的request_id
-// func GetReqID(c *gin.Context) string {
-// 	v, ok := c.Get("X-Request-ID")
-// 	if !ok {
-// 		return ""
-// 	}
-// 	if requestID, ok := v.(string); ok {
-// 		return requestID
-// 	}
-// 	return ""
-// }

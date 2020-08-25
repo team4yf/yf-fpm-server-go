@@ -24,6 +24,7 @@ type APIRsp struct {
 //BizParam 业务的请求参数
 type BizParam map[string]interface{}
 
+//Convert 将参数转换成实体对象
 func (p *BizParam) Convert(obj interface{}) error {
 	return utils.Interface2Struct(p, &obj)
 }
