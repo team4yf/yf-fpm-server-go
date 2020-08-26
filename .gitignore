@@ -5,3 +5,4 @@ conf/*/data/*.aof
 conf/*/data
 logs/
 static/
+test/conf

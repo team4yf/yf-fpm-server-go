@@ -1,11 +1,11 @@
 {
     "db": {
         "engine": "postgres",
-        "user": "localdev",
-        "password": "Start123",
+        "user": "fpm",
+        "password": "Fim741235896",
         "host": "localhost",
         "port": 5432,
-        "database": "localtest",
+        "database": "fim",
         "charset": "utf8",
         "showSql": true
     }

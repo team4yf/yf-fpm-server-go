@@ -18,19 +18,19 @@ type CommonMap map[string]interface{}
 
 //Database the interface of the db (default postgres)
 type Database interface {
-	AutoMigrate(tables []interface{}) error
+	AutoMigrate(tables ...interface{}) error
 
 	Condition(condition string, args ...interface{}) Database
 
-	Sorter(...Sorter) Database
+	Sorter(...*Sorter) Database
 
-	Pager(Pagination) Database
+	Pager(*Pagination) Database
 
 	Model(model interface{}) Database
 
 	Error() error
 
-	Find(result []interface{}) Database
+	Find(result interface{}) Database
 
 	Count(total *int) Database
 
