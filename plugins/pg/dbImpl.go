@@ -24,7 +24,7 @@ func newQuery() *queryData {
 		arguments: make([]interface{}, 0),
 		pager: &db.Pagination{
 			Skip:  0,
-			Limit: 20,
+			Limit: -1,
 		},
 		sorter: make([]db.Sorter, 0),
 	}
@@ -114,14 +114,28 @@ func (p *pgImpl) Model(model interface{}) db.Database {
 }
 
 func (p *pgImpl) Error() (err error) {
-	return p.q.err
+	err = p.q.err
+	p.q = newQuery()
+	return
 }
 
-//Error, TODO Debug
+//OK
+//Ex:
+// list := make([]*Fake, 0)
+// dbclient.Model(one).Sorter(db.Sorter{
+// 	Sortby: "name",
+// 	Asc:    "asc",
+// }).Condition("name = ?", "c").Find(&list).Error()
 func (p *pgImpl) Find(result interface{}) db.Database {
 	//TODO sort & skip & check the result point
-	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Offset(p.q.pager.Skip).Limit(p.q.pager.Limit).Find(&result).Error
-
+	query := p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments)
+	query = query.Offset(p.q.pager.Skip).Limit(p.q.pager.Limit)
+	if len(p.q.sorter) > 0 {
+		for _, sort := range p.q.sorter {
+			query = query.Order(sort.Sortby + " " + sort.Asc)
+		}
+	}
+	p.q.err = query.Find(result).Error
 	return p
 }
 
@@ -135,8 +149,16 @@ func (p *pgImpl) Count(total *int) db.Database {
 	return p
 }
 
-//ERROR:
-func (p *pgImpl) FindAndCount(result []interface{}, total *int) db.Database {
+//OK
+//Ex:
+// list := make([]*Fake, 0)
+// err = dbclient.Model(Fake{}).Condition("name = ?", "c").FindAndCount(&list, &total).Error()
+func (p *pgImpl) FindAndCount(result interface{}, total *int) db.Database {
+	p.Count(total)
+	if p.q.err != nil {
+		return p
+	}
+	p.Find(result)
 	return p
 }
 
@@ -145,7 +167,14 @@ func (p *pgImpl) FindAndCount(result []interface{}, total *int) db.Database {
 // one := &Fake{}
 // err = dbclient.Model(one).Condition("name = ?", "c").First(&one).Error()
 func (p *pgImpl) First(result interface{}) db.Database {
-	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).First(result).Error
+	query := p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments)
+	query = query.Offset(p.q.pager.Skip).Limit(p.q.pager.Limit)
+	if len(p.q.sorter) > 0 {
+		for _, sort := range p.q.sorter {
+			query = query.Order(sort.Sortby + " " + sort.Asc)
+		}
+	}
+	p.q.err = query.First(result).Error
 	return p
 }
 
@@ -175,9 +204,16 @@ func (p *pgImpl) Remove(total *int) db.Database {
 	return p
 }
 
-//TODO:
-func (p *pgImpl) Updates(updates db.CommonMap) db.Database {
-	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Updates(updates).Error
+//OK:
+//Ex:
+// fields := db.CommonMap{
+// 	"value": 101,
+// }
+// err = dbclient.Model(Fake{}).Condition("name = ?", "c").Updates(fields, &total).Error()
+func (p *pgImpl) Updates(updates db.CommonMap, rows *int) db.Database {
+	q := p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Updates(updates)
+	p.q.err = q.Error
+	*rows = (int)(q.RowsAffected)
 	return p
 }
 
@@ -187,6 +223,7 @@ func (p *pgImpl) Updates(updates db.CommonMap) db.Database {
 func (p *pgImpl) Execute(sql string, rows *int) db.Database {
 	d := p.db.Exec(sql)
 	*rows = (int)(d.RowsAffected)
+	p.q = newQuery()
 	p.q.err = d.Error
 	return p
 }
@@ -207,10 +244,15 @@ func (p *pgImpl) Raw(sql string, result interface{}) db.Database {
 	return p
 }
 
-//ERROR: TODO Debug , hant fetch things
+//OK should be a struct
 //Ex:
-//
-func (p *pgImpl) Raws(sql string, results interface{}, iterator func() interface{}) db.Database {
+// raws := make([]*countBody, 0)
+// err = dbclient.Raws(`select id as c, 1 as b from fake`, func() interface{} {
+// 	return &countBody{}
+// }, func(one interface{}) {
+// 	raws = append(raws, one.(*countBody))
+// }).Error()
+func (p *pgImpl) Raws(sql string, iterator func() interface{}, appender func(interface{})) db.Database {
 	d := p.db.Raw(sql)
 	raws, err := d.Rows()
 	if err != nil {
@@ -218,14 +260,11 @@ func (p *pgImpl) Raws(sql string, results interface{}, iterator func() interface
 		return p
 	}
 	defer raws.Close()
-	rows := make([]interface{}, 0)
 	for raws.Next() {
 		one := iterator()
-		d.ScanRows(raws, &one)
-		rows = append(rows, one)
+		d.ScanRows(raws, one)
+		appender(one)
 	}
-
-	results = rows
 
 	return p
 }

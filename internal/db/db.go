@@ -34,7 +34,7 @@ type Database interface {
 
 	Count(total *int) Database
 
-	FindAndCount(result []interface{}, total *int) Database
+	FindAndCount(result interface{}, total *int) Database
 
 	First(result interface{}) Database
 
@@ -42,11 +42,11 @@ type Database interface {
 
 	Remove(total *int) Database
 
-	Updates(updates CommonMap) Database
+	Updates(updates CommonMap, rows *int) Database
 
 	Execute(sql string, rows *int) Database
 
 	Raw(sql string, result interface{}) Database
 
-	Raws(sql string, results interface{}, iterator func() interface{}) Database
+	Raws(sql string, iterator func() interface{}, appender func(interface{})) Database
 }
