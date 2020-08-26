@@ -13,8 +13,8 @@ type queryData struct {
 	condition string
 	arguments []interface{}
 	pager     *db.Pagination
-	sorter    []*db.Sorter
-	err       *error
+	sorter    []db.Sorter
+	err       error
 	model     interface{}
 }
 
@@ -26,7 +26,7 @@ func newQuery() *queryData {
 			Skip:  0,
 			Limit: 20,
 		},
-		sorter: make([]*db.Sorter, 0),
+		sorter: make([]db.Sorter, 0),
 	}
 }
 
@@ -97,7 +97,7 @@ func (p *pgImpl) Condition(condition string, args ...interface{}) db.Database {
 	return p
 }
 
-func (p *pgImpl) Sorter(sorters ...*db.Sorter) db.Database {
+func (p *pgImpl) Sorter(sorters ...db.Sorter) db.Database {
 	p.q.sorter = sorters
 	return p
 }
@@ -114,77 +114,118 @@ func (p *pgImpl) Model(model interface{}) db.Database {
 }
 
 func (p *pgImpl) Error() (err error) {
-	return *p.q.err
+	return p.q.err
 }
 
+//Error, TODO Debug
 func (p *pgImpl) Find(result interface{}) db.Database {
 	//TODO sort & skip & check the result point
-	p.q.err = &p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Limit(p.q.pager.Limit).Find(&result).Error
+	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Offset(p.q.pager.Skip).Limit(p.q.pager.Limit).Find(&result).Error
 
 	return p
 }
 
+//OK
+//Ex:
+// total := 0
+// err = dbclient.Model(Fake{}).Condition("name = ?", "c").Count(&total).Error()
+// total is the count
 func (p *pgImpl) Count(total *int) db.Database {
-	p.q.err = &p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Count(&total).Error
+	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Count(total).Error
 	return p
 }
 
+//ERROR:
 func (p *pgImpl) FindAndCount(result []interface{}, total *int) db.Database {
 	return p
 }
 
+//OK
+//Ex:
+// one := &Fake{}
+// err = dbclient.Model(one).Condition("name = ?", "c").First(&one).Error()
 func (p *pgImpl) First(result interface{}) db.Database {
-	p.q.err = &p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).First(result).Error
+	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).First(result).Error
 	return p
 }
 
+//OK
+//Ex:
+// err = dbclient.Create(&Fake{
+// 	Name:  "c",
+// 	Value: 100,
+// }).Error()
 func (p *pgImpl) Create(entity interface{}) db.Database {
 	if p.q == nil {
 		p.q = newQuery()
 		p.q.model = entity
 	}
-	p.q.err = &p.db.Create(entity).Error
+	p.q.err = p.db.Create(entity).Error
 	return p
 }
 
+//OK
+//Ex:
+// rows := 0
+// err = dbclient.Model(Fake{}).Condition("name = ?", "c").Remove(&rows).Error()
 func (p *pgImpl) Remove(total *int) db.Database {
-	p.q.err = &p.db.Where(p.q.condition, p.q.arguments).Delete(p.q.model).Error
+	d := p.db.Where(p.q.condition, p.q.arguments).Delete(p.q.model)
+	*total = (int)(d.RowsAffected)
+	p.q.err = d.Error
 	return p
 }
 
+//TODO:
 func (p *pgImpl) Updates(updates db.CommonMap) db.Database {
-	p.q.err = &p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Updates(updates).Error
+	p.q.err = p.db.Model(p.q.model).Where(p.q.condition, p.q.arguments).Updates(updates).Error
 	return p
 }
 
-func (p *pgImpl) Execute(sql string) db.Database {
-	p.q.err = &p.db.Exec(sql).Error
+//OK
+//Ex:
+//err = dbclient.Execute(`delete from fake where id = 11`, &rows).Error()
+func (p *pgImpl) Execute(sql string, rows *int) db.Database {
+	d := p.db.Exec(sql)
+	*rows = (int)(d.RowsAffected)
+	p.q.err = d.Error
 	return p
 }
 
+//OK:
+//The result must be a struct
+//Ex:
+// raw := &countBody{}
+// err = dbclient.Raw(`select count(1) as c from fake where id < 10`, raw).Error()
 func (p *pgImpl) Raw(sql string, result interface{}) db.Database {
 	raw := p.db.Raw(sql)
 	if raw.Error != nil {
-		p.q.err = &raw.Error
+		p.q.err = raw.Error
 		return p
 	}
-	p.q.err = &raw.Scan(&result).Error
+	p.q.err = raw.Scan(result).Error
 
 	return p
 }
 
-func (p *pgImpl) Raws(sql string, results []interface{}, iterator func(interface{}, interface{}) error) db.Database {
-	raws, err := p.db.Raw(sql).Rows()
+//ERROR: TODO Debug , hant fetch things
+//Ex:
+//
+func (p *pgImpl) Raws(sql string, results interface{}, iterator func() interface{}) db.Database {
+	d := p.db.Raw(sql)
+	raws, err := d.Rows()
 	if err != nil {
-		p.q.err = &err
+		p.q.err = err
 		return p
 	}
 	defer raws.Close()
+	rows := make([]interface{}, 0)
 	for raws.Next() {
-		//TODO:
-		// p.q.err = &rows.Scan().Error
-
+		one := iterator()
+		d.ScanRows(raws, &one)
+		rows = append(rows, one)
 	}
+
+	results = rows
 
 	return p
 }

@@ -22,7 +22,7 @@ type Database interface {
 
 	Condition(condition string, args ...interface{}) Database
 
-	Sorter(...*Sorter) Database
+	Sorter(...Sorter) Database
 
 	Pager(*Pagination) Database
 
@@ -44,9 +44,9 @@ type Database interface {
 
 	Updates(updates CommonMap) Database
 
-	Execute(sql string) Database
+	Execute(sql string, rows *int) Database
 
 	Raw(sql string, result interface{}) Database
 
-	Raws(sql string, results []interface{}, iterator func(interface{}, interface{}) error) Database
+	Raws(sql string, results interface{}, iterator func() interface{}) Database
 }
