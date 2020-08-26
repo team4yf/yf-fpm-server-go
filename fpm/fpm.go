@@ -85,7 +85,7 @@ type Fpm struct {
 	appInfo *AppInfo
 
 	//database interface
-	database map[string]db.Database
+	database map[string]func() db.Database
 }
 
 //HookHandler the hook handler
@@ -173,7 +173,7 @@ func NewWithConfig(configFile string) *Fpm {
 	fpm.hooks = make(map[string][]*Hook, 0)
 	fpm.filters = make(map[string][]*Filter, 0)
 	fpm.modules = make(map[string]*BizModule, 0)
-	fpm.database = make(map[string]db.Database, 0)
+	fpm.database = make(map[string]func() db.Database, 0)
 	fpm.appInfo = &AppInfo{
 		Name:    "yf-fpm-server-go",
 		Mode:    "debug",
@@ -334,16 +334,16 @@ func Set(key string, value interface{}) {
 
 //GetDatabase get some key/val from the context
 func (fpm *Fpm) GetDatabase(name string) (db.Database, bool) {
-	val, ok := fpm.database[name]
+	provider, ok := fpm.database[name]
 	if !ok {
 		return nil, false
 	}
-	return val, true
+	return provider(), true
 }
 
 //SetDatabase set a db interface
-func (fpm *Fpm) SetDatabase(name string, db db.Database) {
-	fpm.database[name] = db
+func (fpm *Fpm) SetDatabase(name string, provider func() db.Database) {
+	fpm.database[name] = provider
 }
 
 //loadPlugin load the plugins

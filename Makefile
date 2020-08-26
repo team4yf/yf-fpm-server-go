@@ -12,10 +12,10 @@ install:
 	go mod download
 
 dev:
-	go build -o $(GOBIN)/app ./main.go && $(GOBIN)/app
+	go build -race -o $(GOBIN)/app ./main.go && $(GOBIN)/app
 
 build:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/app ./main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -race -o $(GOBIN)/app ./main.go
 
 build-prod:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -tags prod -o $(GOBIN)/app ./main.go

@@ -1,11 +1,7 @@
 package main
 
 import (
-	"time"
-
-	"github.com/pkg/errors"
 	"github.com/team4yf/yf-fpm-server-go/fpm"
-	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 )
 
 type DBSetting struct {
@@ -34,45 +30,45 @@ func main() {
 
 	app.Init()
 
-	p := &fpm.BizParam{
-		"foo":  "bar",
-		"shit": "damn",
-	}
+	// p := &fpm.BizParam{
+	// 	"foo":  "bar",
+	// 	"shit": "damn",
+	// }
 
-	body := testBody{}
-	err := p.Convert(&body)
-	log.Debugf("err: %v, body: %#v", err, body.Foo)
-	if app.HasConfig("db") {
-		var dbConfig DBSetting
-		app.FetchConfig("db", &dbConfig)
+	// body := testBody{}
+	// err := p.Convert(&body)
+	// log.Debugf("err: %v, body: %#v", err, body.Foo)
+	// if app.HasConfig("db") {
+	// 	var dbConfig DBSetting
+	// 	app.FetchConfig("db", &dbConfig)
 
-		log.Debugf("dbconfig %+v", dbConfig)
-	}
+	// 	log.Debugf("dbconfig %+v", dbConfig)
+	// }
 
-	info := app.GetAppInfo()
-	log.Debugf("appInfo: %+v", info)
-	app.AddFilter("foo.bar", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
-		log.Debugf("before %s, args: %v", biz, *args)
-		return true, nil
-	}, 1)
+	// info := app.GetAppInfo()
+	// log.Debugf("appInfo: %+v", info)
+	// app.AddFilter("foo.bar", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
+	// 	log.Debugf("before %s, args: %v", biz, *args)
+	// 	return true, nil
+	// }, 1)
 
-	app.AddFilter("foo.bar", "after", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
-		log.Debugf("after %s, args: %v", biz, *args)
-		return true, nil
-	}, 1)
+	// app.AddFilter("foo.bar", "after", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
+	// 	log.Debugf("after %s, args: %v", biz, *args)
+	// 	return true, nil
+	// }, 1)
 
-	app.Subscribe("#webhook/test/foo", func(_ string, data interface{}) {
-		log.Debugf("webhook: %+v", data)
-	})
+	// app.Subscribe("#webhook/test/foo", func(_ string, data interface{}) {
+	// 	log.Debugf("webhook: %+v", data)
+	// })
 
-	bizModule := make(fpm.BizModule, 0)
-	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
-		err = errors.New("foo stub")
-		time.Sleep(10 * time.Second)
-		data = 1
-		return
-	}
-	app.AddBizModule("foo", &bizModule)
+	// bizModule := make(fpm.BizModule, 0)
+	// bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
+	// 	err = errors.New("foo stub")
+	// 	time.Sleep(10 * time.Second)
+	// 	data = 1
+	// 	return
+	// }
+	// app.AddBizModule("foo", &bizModule)
 
 	app.Run()
 
