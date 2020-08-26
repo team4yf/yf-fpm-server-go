@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/team4yf/yf-fpm-server-go/fpm"
+	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 )
 
 type DBSetting struct {
@@ -45,8 +46,8 @@ func main() {
 	// 	log.Debugf("dbconfig %+v", dbConfig)
 	// }
 
-	// info := app.GetAppInfo()
-	// log.Debugf("appInfo: %+v", info)
+	info := app.GetAppInfo()
+	log.Debugf("appInfo: %+v", info)
 	// app.AddFilter("foo.bar", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, error) {
 	// 	log.Debugf("before %s, args: %v", biz, *args)
 	// 	return true, nil
