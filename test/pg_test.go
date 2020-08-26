@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,4 +109,36 @@ func TestPG(t *testing.T) {
 	assert.Nil(t, err, "should nil err")
 	assert.Equal(t, true, total > 0, "should gt 0")
 
+}
+
+func TestTran(t *testing.T) {
+	app := fpm.New()
+
+	app.Init()
+
+	dbclient, exists := app.GetDatabase("pg")
+	assert.Equal(t, true, exists, "should true")
+	//OK
+	err := dbclient.Transaction(func(tx db.Database) (err error) {
+		total := 0
+		fields := db.CommonMap{
+			"value": 101,
+		}
+		err = tx.Model(Fake{}).Condition("name = ?", "c").Updates(fields, &total).Error()
+
+		return
+	})
+	assert.Nil(t, err, "should nil err")
+	//Fail
+	err = dbclient.Transaction(func(tx db.Database) (err error) {
+		total := 0
+		fields := db.CommonMap{
+			"value": 102,
+		}
+		err = tx.Model(Fake{}).Condition("name = ?", "c").Updates(fields, &total).Error()
+
+		return errors.New("err")
+	})
+
+	assert.NotNil(t, err, "should err")
 }

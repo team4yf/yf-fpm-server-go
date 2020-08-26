@@ -49,4 +49,6 @@ type Database interface {
 	Raw(sql string, result interface{}) Database
 
 	Raws(sql string, iterator func() interface{}, appender func(interface{})) Database
+
+	Transaction(func(Database) error) error
 }

@@ -119,6 +119,15 @@ func (p *pgImpl) Error() (err error) {
 	return
 }
 
+func (p *pgImpl) Transaction(body func(db.Database) error) error {
+
+	return p.db.Transaction(func(tx *gorm.DB) error {
+		return body(&pgImpl{
+			db: tx,
+		})
+	})
+}
+
 //OK
 //Ex:
 // list := make([]*Fake, 0)
