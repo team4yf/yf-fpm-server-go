@@ -7,7 +7,7 @@ type Database interface {
 
 	Find(*QueryData, interface{}) error
 
-	Count(*QueryData, *int) error
+	Count(*BaseData, *int) error
 
 	FindAndCount(*QueryData, interface{}, *int) error
 

@@ -27,7 +27,7 @@ type BaseData struct {
 
 //QueryData query defination
 type QueryData struct {
-	Fields []string
+	Fields []interface{}
 	*BaseData
 	Pager  *Pagination
 	Sorter []Sorter
