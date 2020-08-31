@@ -21,6 +21,7 @@ type BaseData struct {
 	AffectedRows int64
 	Condition    string
 	Table        string
+	Model        interface{}
 	Arguments    []interface{}
 	Err          error
 }
@@ -46,4 +47,34 @@ func NewQuery() *QueryData {
 		},
 		Sorter: make([]Sorter, 0),
 	}
+}
+
+func (p *BaseData) SetCondition(condition string, args ...interface{}) *BaseData {
+	p.Condition = condition
+	p.Arguments = args
+	return p
+}
+
+func (p *QueryData) AddSorter(sorters ...Sorter) *QueryData {
+	p.Sorter = append(p.Sorter, sorters...)
+	return p
+}
+
+func (p *QueryData) SetPager(pager *Pagination) *QueryData {
+	p.Pager = pager
+	return p
+}
+
+func (p *QueryData) AddFields(args ...interface{}) *QueryData {
+	p.Fields = append(p.Fields, args...)
+	return p
+}
+func (p *BaseData) SetTable(t string) *BaseData {
+	p.Table = t
+	return p
+}
+
+func (p *BaseData) SetModel(t interface{}) *BaseData {
+	p.Model = t
+	return p
 }
