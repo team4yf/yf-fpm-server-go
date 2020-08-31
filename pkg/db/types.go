@@ -49,31 +49,38 @@ func NewQuery() *QueryData {
 	}
 }
 
+//SetCondition set confition for the query
 func (p *BaseData) SetCondition(condition string, args ...interface{}) *BaseData {
 	p.Condition = condition
 	p.Arguments = args
 	return p
 }
 
+//AddSorter add sorter for the query
 func (p *QueryData) AddSorter(sorters ...Sorter) *QueryData {
 	p.Sorter = append(p.Sorter, sorters...)
 	return p
 }
 
+//SetPager add pager for the query
 func (p *QueryData) SetPager(pager *Pagination) *QueryData {
 	p.Pager = pager
 	return p
 }
 
+//AddFields add fields for the query
 func (p *QueryData) AddFields(args ...interface{}) *QueryData {
 	p.Fields = append(p.Fields, args...)
 	return p
 }
+
+//SetTable add table for the query
 func (p *BaseData) SetTable(t string) *BaseData {
 	p.Table = t
 	return p
 }
 
+//SetModel add model for the query
 func (p *BaseData) SetModel(t interface{}) *BaseData {
 	p.Model = t
 	return p
