@@ -7,19 +7,19 @@ type Database interface {
 
 	Find(*QueryData, interface{}) error
 
-	Count(*BaseData, *int) error
+	Count(*BaseData, *int64) error
 
-	FindAndCount(*QueryData, interface{}, *int) error
+	FindAndCount(*QueryData, interface{}, *int64) error
 
 	First(*QueryData, interface{}) error
 
 	Create(*BaseData, interface{}) error
 
-	Remove(*BaseData, *int) error
+	Remove(*BaseData, *int64) error
 
-	Updates(*BaseData, CommonMap, *int) error
+	Updates(*BaseData, CommonMap, *int64) error
 
-	Execute(sql string, rows *int) error
+	Execute(sql string, rows *int64) error
 
 	Raw(sql string, result interface{}) error
 
