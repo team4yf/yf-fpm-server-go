@@ -5,21 +5,21 @@ package db
 type Database interface {
 	AutoMigrate(...interface{}) error
 
-	Find(*QueryData, *interface{}) error
+	Find(*QueryData, interface{}) error
 
-	Count(*BaseData, *int64) error
+	Count(*BaseData, *int) error
 
-	FindAndCount(*QueryData, *interface{}, *int64) error
+	FindAndCount(*QueryData, interface{}, *int) error
 
-	First(*QueryData, *interface{}) error
+	First(*QueryData, interface{}) error
 
 	Create(*BaseData, interface{}) error
 
-	Remove(*BaseData, *int64) error
+	Remove(*BaseData, *int) error
 
-	Updates(*BaseData, CommonMap, *int64) error
+	Updates(*BaseData, CommonMap, *int) error
 
-	Execute(sql string, rows *int64) error
+	Execute(sql string, rows *int) error
 
 	Raw(sql string, result interface{}) error
 
