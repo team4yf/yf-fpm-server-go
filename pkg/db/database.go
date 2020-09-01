@@ -5,13 +5,13 @@ package db
 type Database interface {
 	AutoMigrate(...interface{}) error
 
-	Find(*QueryData, interface{}) error
+	Find(*QueryData, *interface{}) error
 
 	Count(*BaseData, *int64) error
 
-	FindAndCount(*QueryData, interface{}, *int64) error
+	FindAndCount(*QueryData, *interface{}, *int64) error
 
-	First(*QueryData, interface{}) error
+	First(*QueryData, *interface{}) error
 
 	Create(*BaseData, interface{}) error
 
