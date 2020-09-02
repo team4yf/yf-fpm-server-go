@@ -28,7 +28,7 @@ type BaseData struct {
 
 //QueryData query defination
 type QueryData struct {
-	Fields []interface{}
+	Fields []string
 	*BaseData
 	Pager  *Pagination
 	Sorter []Sorter
@@ -69,7 +69,7 @@ func (p *QueryData) SetPager(pager *Pagination) *QueryData {
 }
 
 //AddFields add fields for the query
-func (p *QueryData) AddFields(args ...interface{}) *QueryData {
+func (p *QueryData) AddFields(args ...string) *QueryData {
 	p.Fields = append(p.Fields, args...)
 	return p
 }
