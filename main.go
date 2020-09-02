@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"time"
+
 	"github.com/team4yf/yf-fpm-server-go/fpm"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
 )
@@ -62,14 +65,14 @@ func main() {
 	// 	log.Debugf("webhook: %+v", data)
 	// })
 
-	// bizModule := make(fpm.BizModule, 0)
-	// bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
-	// 	err = errors.New("foo stub")
-	// 	time.Sleep(10 * time.Second)
-	// 	data = 1
-	// 	return
-	// }
-	// app.AddBizModule("foo", &bizModule)
+	bizModule := make(fpm.BizModule, 0)
+	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
+		err = errors.New("foo stub")
+		time.Sleep(10 * time.Second)
+		data = 1
+		return
+	}
+	app.AddBizModule("foo", &bizModule)
 
 	app.Run()
 

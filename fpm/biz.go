@@ -4,12 +4,13 @@ import "github.com/team4yf/yf-fpm-server-go/pkg/utils"
 
 //APIReq api 请求体
 type APIReq struct {
-	Method    string    `json:"method"`
-	Appkey    string    `json:"appkey"`
-	Timestamp int64     `json:"timestamp"`
-	V         string    `json:"v"`
-	Param     *BizParam `json:"param"`
-	Sign      string    `json:"sign"`
+	Method    string      `json:"method"`
+	Appkey    string      `json:"appkey"`
+	Timestamp int64       `json:"timestamp"`
+	V         string      `json:"v"`
+	Raw       interface{} `json:"param"`
+	Sign      string      `json:"sign"`
+	Param     *BizParam
 }
 
 //APIRsp api 响应体

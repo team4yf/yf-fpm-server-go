@@ -232,6 +232,29 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 		return
 	}
 	method := data.Method
+	if data.Raw != nil {
+		p := BizParam{}
+		// Raw 可能是string类型，也可能是 object 类型
+		switch data.Raw.(type) {
+		case string:
+			if err := utils.StringToStruct(data.Raw.(string), &p); err != nil {
+				rsp.Message = err.Error()
+				rsp.Errno = -1
+				rsp.Error = err
+				c.Fail(rsp)
+				return
+			}
+		default:
+			if err := utils.Interface2Struct(data.Raw.(string), &p); err != nil {
+				rsp.Message = err.Error()
+				rsp.Errno = -1
+				rsp.Error = err
+				c.Fail(rsp)
+				return
+			}
+		}
+		data.Param = &p
+	}
 
 	result, err := fpm.Execute(method, data.Param)
 	if err != nil {
