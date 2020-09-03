@@ -95,3 +95,8 @@ func (c *Ctx) Fail(err interface{}) {
 func (c *Ctx) GetRequest() *http.Request {
 	return c.request
 }
+
+//GetResponse output the json
+func (c *Ctx) GetResponse() http.ResponseWriter {
+	return c.w
+}

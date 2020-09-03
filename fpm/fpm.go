@@ -11,7 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/go-oauth2/oauth2/manage"
+	"github.com/go-oauth2/oauth2/models"
+	"github.com/go-oauth2/oauth2/server"
+	"github.com/go-oauth2/oauth2/store"
 	"github.com/spf13/viper"
+	"gopkg.in/oauth2.v3/generates"
 
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
@@ -188,6 +194,10 @@ func NewWithConfig(configFile string) *Fpm {
 
 	fpm.loadPlugin()
 	defaultInstance = fpm
+
+	//pass the jwt key
+	utils.InitJWTUtil(fpm.GetConfig("jwt.secret").(string))
+
 	return fpm
 }
 
@@ -210,9 +220,12 @@ func (fpm *Fpm) Init() {
 
 	fpm.Use(middleware.Recover)
 	fpm.BindHandler("/api", api).Methods("POST")
+
 	fpm.BindHandler("/biz/{method}", biz).Methods("POST", "GET")
 	fpm.BindHandler("/webhook/{upstream}/{event}/{method}", webhook).Methods("POST")
 	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+
+	initOauth2(fpm)
 	fpm.runHook("AFTER_INIT")
 }
 
@@ -220,7 +233,28 @@ func (fpm *Fpm) Init() {
 func (fpm *Fpm) GetAppInfo() *AppInfo {
 	return fpm.appInfo
 }
+func initOauth2(fpm *Fpm) {
+	manager := manage.NewDefaultManager()
+	// token memory store
+	manager.MustTokenStorage(store.NewMemoryTokenStore())
 
+	// client memory store
+	clientStore := store.NewClientStore()
+	clientStore.Set("000000", &models.Client{
+		ID:     "000000",
+		Secret: "999999",
+		Domain: "http://localhost",
+	})
+	manager.MapClientStorage(clientStore)
+	//TODO: use udf generater
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte(fpm.GetConfig("jwt.secret").(string)), jwt.SigningMethodHS512))
+	srv := server.NewDefaultServer(manager)
+	srv.SetAllowGetAccessRequest(true)
+	srv.SetClientInfoHandler(server.ClientFormHandler)
+	fpm.BindHandler("/oauth/token", func(c *ctx.Ctx, fpm *Fpm) {
+		srv.HandleTokenRequest(c.GetResponse(), c.GetRequest())
+	}).Methods("GET")
+}
 func biz(c *ctx.Ctx, fpm *Fpm) {
 	method := c.Param("method")
 	method = strings.ReplaceAll(method, "_", ".")
@@ -228,23 +262,11 @@ func biz(c *ctx.Ctx, fpm *Fpm) {
 	rsp.Timestamp = time.Now().Unix()
 	param := BizParam{}
 	if "POST" == c.GetRequest().Method {
-		if err := c.ParseBody(&param); err != nil {
-			rsp.Message = err.Error()
-			rsp.Errno = -1
-			rsp.Error = err
-			c.Fail(rsp)
-			return
-		}
+		c.ParseBody(&param)
 	} else {
 		//Get
 		querys := c.Querys()
-		if err := utils.Interface2Struct(querys, &param); err != nil {
-			rsp.Message = err.Error()
-			rsp.Errno = -1
-			rsp.Error = err
-			c.Fail(rsp)
-			return
-		}
+		utils.Interface2Struct(querys, &param)
 	}
 
 	data, err := fpm.Execute(method, &param)

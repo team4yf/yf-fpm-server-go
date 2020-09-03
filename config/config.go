@@ -1,4 +1,4 @@
-// 根据文件进行初始化配置，例如设定日志的配置，并监控文件的变化
+//Package config 根据文件进行初始化配置，例如设定日志的配置，并监控文件的变化
 package config
 
 import (
@@ -29,6 +29,8 @@ func Init(cfg string) error {
 		return err
 	}
 	viper.SetDefault("mode", "debug")
+	viper.SetDefault("jwt.secret", "fpm is awesome")
+	viper.SetDefault("jwt.expired", 72000)
 	viper.SetDefault("log.writers", "stdout")
 	viper.SetDefault("log.level", "DEBUG")
 	viper.SetDefault("log.logger_file", "./logs/app.log")

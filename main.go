@@ -68,7 +68,7 @@ func main() {
 	bizModule := make(fpm.BizModule, 0)
 	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
 		err = errors.New("foo stub")
-		time.Sleep(10 * time.Second)
+		time.Sleep(2 * time.Second)
 		data = 1
 		return
 	}

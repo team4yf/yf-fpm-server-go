@@ -1,35 +1,37 @@
 package utils
 
-import "github.com/dgrijalva/jwt-go"
+import (
+	"fmt"
 
-// GenerateToken 生成Token
-func GenerateToken(mapClaims jwt.MapClaims, key string) (string, error) {
+	"github.com/dgrijalva/jwt-go"
+)
+
+var (
+	key []byte
+)
+
+//InitJWTUtil init the jwt key
+func InitJWTUtil(sceret string) {
+	key = []byte(sceret)
+}
+
+//GenerateToken 生成Token
+func GenerateToken(mapClaims *jwt.MapClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, mapClaims)
 	return token.SignedString([]byte(key))
 }
 
-//  验证token
-// func checkToken(uid int64, token *jwt.Token) bool {
-// 	tokens, _ := token.SignedString([]byte(JWTKey))
-// 	redisToken, _ := GetMemberToken(uid)
-// 	if tokens != redisToken {
-// 		return false
-// 	}
-// 	return true
-// }
-
-//  用户登录请求取出token
-//  token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
-// 	return []byte(JWTKey), nil
-//  })
-//  if err == nil && token.Valid {
-// 	tokenMap := token.Claims.(jwt.MapClaims)
-// 	uidStr := tokenMap["uid"].(string)
-// 	uid, _ := strconv.ParseInt(uidStr,10,64)
-
-// 	if !checkToken(uid, token) {
-// 	   // 验证token 是否合法
-// 	   base.ErrorResponse(w, http.StatusUnauthorized, "Authorization Is Invalid")
-// 	   return
-// 	}
-//  }
+//CheckToken  验证token
+func CheckToken(tokenString string) (bool, *jwt.Token) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return key, nil
+	})
+	if err != nil {
+		return false, nil
+	}
+	return token.Valid, token
+}
