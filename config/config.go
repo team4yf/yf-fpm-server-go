@@ -3,11 +3,14 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/team4yf/yf-fpm-server-go/pkg/log"
+	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
 )
 
 // Config 读取配置
@@ -43,14 +46,13 @@ func Init(cfg string) error {
 
 func (cfg *Config) initConfig() error {
 	viper.AutomaticEnv()      // 读取匹配的环境变量
-	viper.SetEnvPrefix("FPM") // 读取环境变量的前缀为 BS
+	viper.SetEnvPrefix("FPM") // 读取环境变量的前缀为 FPM
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
-
+	deployMode := viper.GetString("deploy.mode")
 	if cfg.Name != "" {
 		viper.SetConfigFile(cfg.Name) // 如果指定了配置文件，则解析指定的配置文件
 	} else {
-		deployMode := viper.GetString("deploy.mode")
 		if deployMode == "" {
 			deployMode = "local"
 		}
@@ -59,8 +61,30 @@ func (cfg *Config) initConfig() error {
 		viper.AddConfigPath("conf") // 如果没有指定配置文件，则解析默认的配置文件
 		viper.SetConfigName("config." + deployMode)
 	}
-	viper.SetConfigType("json") // 设置配置文件格式为json
+	//读取配置目录下的文件列表以及其后缀
+	//是否存在配置目录
+	if !utils.IsDir("conf") {
+		//没有，则直接返回
+		return nil
+	}
 
+	list, err := ioutil.ReadDir("conf") //要读取的目录地址DIR，得到列表
+	if err != nil {
+		fmt.Printf("Reade conf folder error: %v", err)
+		// 读取失败，直接返回
+		return nil
+	}
+	for _, info := range list {
+		//遍历目录下的内容，获取文件详情，同os.Stat(filename)获取的信息
+		confFileName := info.Name() //文件名
+		if strings.HasPrefix(confFileName, "config."+deployMode) {
+			ext := path.Ext(confFileName)
+			viper.SetConfigType(ext[1:]) // 设置配置文件格式
+		}
+
+	}
+
+	//
 	if err := viper.ReadInConfig(); err != nil { // viper解析配置文件
 		return errors.WithStack(err)
 	}

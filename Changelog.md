@@ -1,5 +1,12 @@
 ## Changelog
 
+#### Sep 3 v0.2.0
+
+Feature:
+- support run with no config file. use all default value.
+- add jwt api, refresh/validate
+
+
 #### August 31 v0.1.14
 
 Feature:

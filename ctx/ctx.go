@@ -36,6 +36,21 @@ func (c *Ctx) Query(p string) string {
 
 }
 
+//Querys get the query string of the url
+func (c *Ctx) Querys() map[string]string {
+	querys := make(map[string]string)
+	for k, vs := range c.request.URL.Query() {
+		if len(vs) < 1 {
+			querys[k] = ""
+		} else {
+			querys[k] = vs[0]
+		}
+
+	}
+	return querys
+
+}
+
 //GetHeader get data from the header
 func (c *Ctx) GetHeader(k string) string {
 	data := c.request.Header.Get(k)

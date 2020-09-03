@@ -210,6 +210,7 @@ func (fpm *Fpm) Init() {
 
 	fpm.Use(middleware.Recover)
 	fpm.BindHandler("/api", api).Methods("POST")
+	fpm.BindHandler("/biz/{method}", biz).Methods("POST", "GET")
 	fpm.BindHandler("/webhook/{upstream}/{event}/{method}", webhook).Methods("POST")
 	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	fpm.runHook("AFTER_INIT")
@@ -218,6 +219,44 @@ func (fpm *Fpm) Init() {
 //GetAppInfo get the basic info of the app from the config
 func (fpm *Fpm) GetAppInfo() *AppInfo {
 	return fpm.appInfo
+}
+
+func biz(c *ctx.Ctx, fpm *Fpm) {
+	method := c.Param("method")
+	method = strings.ReplaceAll(method, "_", ".")
+	var rsp APIRsp
+	rsp.Timestamp = time.Now().Unix()
+	param := BizParam{}
+	if "POST" == c.GetRequest().Method {
+		if err := c.ParseBody(&param); err != nil {
+			rsp.Message = err.Error()
+			rsp.Errno = -1
+			rsp.Error = err
+			c.Fail(rsp)
+			return
+		}
+	} else {
+		//Get
+		querys := c.Querys()
+		if err := utils.Interface2Struct(querys, &param); err != nil {
+			rsp.Message = err.Error()
+			rsp.Errno = -1
+			rsp.Error = err
+			c.Fail(rsp)
+			return
+		}
+	}
+
+	data, err := fpm.Execute(method, &param)
+	if err != nil {
+		rsp.Message = err.Error()
+		rsp.Errno = -1
+		rsp.Error = err
+		c.Fail(rsp)
+		return
+	}
+	rsp.Errno = 0
+	rsp.Data = data
 }
 
 func api(c *ctx.Ctx, fpm *Fpm) {
