@@ -292,6 +292,7 @@ func biz(c *ctx.Ctx, fpm *Fpm) {
 	}
 	rsp.Errno = 0
 	rsp.Data = data
+	c.JSON(rsp)
 }
 
 func api(c *ctx.Ctx, fpm *Fpm) {
