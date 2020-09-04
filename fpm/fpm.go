@@ -216,7 +216,7 @@ func (fpm *Fpm) Init() {
 	fpm.Use(middleware.Recover)
 	fpm.BindHandler("/api", api).Methods("POST")
 
-	fpm.BindHandler("/biz/{method}", biz).Methods("POST", "GET")
+	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")
 	fpm.BindHandler("/webhook/{upstream}/{event}/{method}", webhook).Methods("POST")
 	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
@@ -269,7 +269,8 @@ func initOauth2(fpm *Fpm) {
 
 func biz(c *ctx.Ctx, fpm *Fpm) {
 	method := c.Param("method")
-	method = strings.ReplaceAll(method, "_", ".")
+	module := c.Param("module")
+	method = module + "." + method
 	var rsp APIRsp
 	rsp.Timestamp = time.Now().Unix()
 	param := BizParam{}

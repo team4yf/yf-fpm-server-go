@@ -4,8 +4,8 @@
 
 Feature:
 - support run with no config file. use all default value.
-- add jwt api, refresh/validate
-- add `/biz/{method}` url for execute biz directly
+- add jwt api, `/oauth/token`
+- add `/biz/{module}/{method}` url for execute biz directly
 
 
 #### August 31 v0.1.14
