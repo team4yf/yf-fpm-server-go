@@ -6,3 +6,4 @@ conf/*/data
 logs/
 static/
 test/conf
+*.so
