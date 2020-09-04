@@ -12,12 +12,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/go-oauth2/oauth2/manage"
-	"github.com/go-oauth2/oauth2/models"
-	"github.com/go-oauth2/oauth2/server"
-	"github.com/go-oauth2/oauth2/store"
 	"github.com/spf13/viper"
-	"gopkg.in/oauth2.v3/generates"
 
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
@@ -234,27 +229,44 @@ func (fpm *Fpm) GetAppInfo() *AppInfo {
 	return fpm.appInfo
 }
 func initOauth2(fpm *Fpm) {
-	manager := manage.NewDefaultManager()
-	// token memory store
-	manager.MustTokenStorage(store.NewMemoryTokenStore())
 
-	// client memory store
-	clientStore := store.NewClientStore()
-	clientStore.Set("000000", &models.Client{
-		ID:     "000000",
-		Secret: "999999",
-		Domain: "http://localhost",
-	})
-	manager.MapClientStorage(clientStore)
-	//TODO: use udf generater
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte(fpm.GetConfig("jwt.secret").(string)), jwt.SigningMethodHS512))
-	srv := server.NewDefaultServer(manager)
-	srv.SetAllowGetAccessRequest(true)
-	srv.SetClientInfoHandler(server.ClientFormHandler)
+	//grant_type=client_credentials&client_id=000000&client_secret=999999&scope=read
+	//curl "localhost:9090/oauth/token?grant_type=client_credentials&client_id=123123123&client_secret=123123123&scope=admin"
+	//we get  {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMzEyMzEyMyJ9.5KEyBxDH2NGVKoiA0J6IPB4QPlvZi9zPH9SSKTWF2h8","expires_in":7200,"scope":"admin","token_type":"Bearer"}
+
 	fpm.BindHandler("/oauth/token", func(c *ctx.Ctx, fpm *Fpm) {
-		srv.HandleTokenRequest(c.GetResponse(), c.GetRequest())
+		querys := c.Querys()
+		gt := querys["grant_type"]
+		if "client_credentials" != gt {
+			c.JSON(map[string]interface{}{
+				"errno":   -1,
+				"message": "only support grant_type=client_credentials",
+			})
+			return
+		}
+		id := querys["client_id"]
+		secret := querys["client_secret"]
+		if id != "123123123" || secret != "123123123" {
+			c.JSON(map[string]interface{}{
+				"errno":   -1,
+				"message": "id or secret error!",
+			})
+			return
+		}
+		scope := querys["scope"]
+		tokenStr, _ := utils.GenerateToken(&jwt.MapClaims{
+			"id": id,
+		})
+
+		c.JSON(map[string]interface{}{
+			"access_token": tokenStr,
+			"expires_in":   7200,
+			"scope":        scope,
+			"token_type":   "Bearer",
+		})
 	}).Methods("GET")
 }
+
 func biz(c *ctx.Ctx, fpm *Fpm) {
 	method := c.Param("method")
 	method = strings.ReplaceAll(method, "_", ".")
