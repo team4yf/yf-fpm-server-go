@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	registerEvents map[string]RegisterHandler
+	registerPlugins map[string]*Plugin
 
 	errNoMethod = errors.New("No method defined")
 
@@ -38,12 +38,17 @@ var (
 
 func init() {
 	tempMapData = make(map[string]interface{})
-	registerEvents = make(map[string]RegisterHandler)
+	registerPlugins = make(map[string]*Plugin)
 }
-
+func Register(handler func (*Fpm)) {
+	RegisterByPlugin(&Plugin{
+		Name: utils.GenShortID(),
+		Handler: handler,
+	})
+}
 //Register register some plugin
-func Register(event RegisterHandler) {
-	registerEvents[event.Name] = event
+func RegisterByPlugin(event *Plugin) {
+	registerPlugins[event.Name] = event
 }
 
 //Fpm the core type defination
@@ -91,11 +96,13 @@ type Fpm struct {
 //HookHandler the hook handler
 type HookHandler func(*Fpm)
 
-//RegisterHandler the hook handler
-type RegisterHandler struct {
+//Plugin the plugin 
+type Plugin struct {
 	Handler func(*Fpm)
 	Name string
 	Deps []string
+	Installed bool
+	V string
 }
 //FilterHandler the hook handler
 type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
@@ -419,31 +426,45 @@ func (fpm *Fpm) SetDatabase(name string, provider func() db.Database) {
 
 //loadPlugin load the plugins
 func (fpm *Fpm) loadPlugin() {
-	
-	
 	//the plugin should contains dependence of the other
 	//we should make them run with sequence
-	//
-	handlers := make(chan RegisterHandler, 10)
-	go func(){
-		for h := range handlers {
-			fpm.Logger.Debugf("name: %s", h.Name)
-			h.Handler(fpm)
-		}
-	}()
-	for name, event := range registerEvents {
-		if len(event.Deps) < 1{
-			// no dep, run now
-			handlers <- event
-		}
-		for _, d := range event.Deps {
-			if _, ok := registerEvents[d]; !ok {
-				panic(fmt.Sprintf("plugin: %s required: %s, but now installed.", name, d))
+
+	for {
+		done := true
+		for name, event := range registerPlugins {
+			done = true
+			if event.Installed {
+				continue
+			}
+			done = false
+			if len(event.Deps) < 1{
+				// no dep, run now
+				event.Installed = true
+				event.Handler(fpm)
+				continue
+			}
+			depDone := true
+			for _, d := range event.Deps {
+				p, ok := registerPlugins[d]
+				if !ok {
+					panic(fmt.Sprintf("plugin: %s required: %s, but now installed.", name, d))
+				}
+				if !p.Installed{
+					// dep not installed yet
+					depDone = false
+				}
+			}
+			if depDone {
+				// all deps installd
+				event.Installed = true
+				event.Handler(fpm)
 			}
 		}
-
-		
+		if done {
+			break
+		}
 	}
+	
 }
 
 //HasConfig return true if config in the configfile
