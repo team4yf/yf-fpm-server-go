@@ -477,6 +477,20 @@ func (fpm *Fpm) GetConfig(key string) interface{} {
 	return viper.Get(key)
 }
 
+func (fpm *Fpm) InstalldPlugins() []string{
+	names := make([]string, 0)
+	for m,_ := range registerPlugins {
+		names = append(names, m)
+	}
+	return names
+}
+
+func (fpm *Fpm) IsInstalledPlugin(name string) bool {
+	_, ok := registerPlugins[name]
+	return ok
+}
+
+
 //FetchConfig fetch config to the c
 func (fpm *Fpm) FetchConfig(key string, c interface{}) error {
 	if !viper.IsSet(key) {
