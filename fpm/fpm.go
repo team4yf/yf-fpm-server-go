@@ -40,12 +40,13 @@ func init() {
 	tempMapData = make(map[string]interface{})
 	registerPlugins = make(map[string]*Plugin)
 }
-func Register(handler func (*Fpm)) {
+func Register(handler func(*Fpm)) {
 	RegisterByPlugin(&Plugin{
-		Name: utils.GenShortID(),
+		Name:    utils.GenShortID(),
 		Handler: handler,
 	})
 }
+
 //Register register some plugin
 func RegisterByPlugin(event *Plugin) {
 	registerPlugins[event.Name] = event
@@ -96,14 +97,15 @@ type Fpm struct {
 //HookHandler the hook handler
 type HookHandler func(*Fpm)
 
-//Plugin the plugin 
+//Plugin the plugin
 type Plugin struct {
-	Handler func(*Fpm)
-	Name string
-	Deps []string
+	Handler   func(*Fpm)
+	Name      string
+	Deps      []string
 	Installed bool
-	V string
+	V         string
 }
+
 //FilterHandler the hook handler
 type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
 
@@ -255,18 +257,21 @@ func initOauth2(fpm *Fpm) {
 		}
 		id := querys["client_id"]
 		secret := querys["client_secret"]
+		//TODO need check here
 		if id != "123123123" || secret != "123123123" {
 			c.BizError(errno.OAuthClientAuthErr)
 			return
 		}
 		scope := querys["scope"]
+		exp := 720000
 		tokenStr, _ := utils.GenerateToken(&jwt.MapClaims{
-			"id": id,
+			"id":  id,
+			"exp": exp,
 		})
 
 		c.JSON(map[string]interface{}{
 			"access_token": tokenStr,
-			"expires_in":   7200,
+			"expires_in":   exp,
 			"scope":        scope,
 			"token_type":   "Bearer",
 		})
@@ -437,7 +442,7 @@ func (fpm *Fpm) loadPlugin() {
 				continue
 			}
 			done = false
-			if len(event.Deps) < 1{
+			if len(event.Deps) < 1 {
 				// no dep, run now
 				event.Installed = true
 				event.Handler(fpm)
@@ -449,7 +454,7 @@ func (fpm *Fpm) loadPlugin() {
 				if !ok {
 					panic(fmt.Sprintf("plugin: %s required: %s, but now installed.", name, d))
 				}
-				if !p.Installed{
+				if !p.Installed {
 					// dep not installed yet
 					depDone = false
 				}
@@ -464,7 +469,7 @@ func (fpm *Fpm) loadPlugin() {
 			break
 		}
 	}
-	
+
 }
 
 //HasConfig return true if config in the configfile
@@ -477,9 +482,9 @@ func (fpm *Fpm) GetConfig(key string) interface{} {
 	return viper.Get(key)
 }
 
-func (fpm *Fpm) InstalldPlugins() []string{
+func (fpm *Fpm) InstalldPlugins() []string {
 	names := make([]string, 0)
-	for m,_ := range registerPlugins {
+	for m, _ := range registerPlugins {
 		names = append(names, m)
 	}
 	return names
@@ -489,7 +494,6 @@ func (fpm *Fpm) IsInstalledPlugin(name string) bool {
 	_, ok := registerPlugins[name]
 	return ok
 }
-
 
 //FetchConfig fetch config to the c
 func (fpm *Fpm) FetchConfig(key string, c interface{}) error {
