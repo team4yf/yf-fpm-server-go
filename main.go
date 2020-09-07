@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/team4yf/yf-fpm-server-go/fpm"
-	"github.com/team4yf/yf-fpm-server-go/pkg/log"
+	"github.com/team4yf/fpm-go-pkg/log"
 )
 
 type DBSetting struct {

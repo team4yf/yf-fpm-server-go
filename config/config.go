@@ -9,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"github.com/team4yf/yf-fpm-server-go/pkg/log"
-	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
+	"github.com/team4yf/fpm-go-pkg/log"
+	"github.com/team4yf/fpm-go-pkg/utils"
 )
 
 // Config 读取配置

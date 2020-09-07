@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"fmt"
-	"github.com/team4yf/yf-fpm-server-go/pkg/log"
+	"github.com/team4yf/fpm-go-pkg/log"
 )
 
 //Recover recover the panic

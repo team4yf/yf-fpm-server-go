@@ -1,6 +1,6 @@
 package fpm
 
-import "github.com/team4yf/yf-fpm-server-go/pkg/utils"
+import "github.com/team4yf/fpm-go-pkg/utils"
 
 //APIReq api 请求体
 type APIReq struct {

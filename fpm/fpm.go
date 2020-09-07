@@ -20,8 +20,8 @@ import (
 	"github.com/team4yf/yf-fpm-server-go/middleware"
 	"github.com/team4yf/yf-fpm-server-go/pkg/cache"
 	"github.com/team4yf/yf-fpm-server-go/pkg/db"
-	"github.com/team4yf/yf-fpm-server-go/pkg/log"
-	"github.com/team4yf/yf-fpm-server-go/pkg/utils"
+	"github.com/team4yf/fpm-go-pkg/log"
+	"github.com/team4yf/fpm-go-pkg/utils"
 	"github.com/team4yf/yf-fpm-server-go/version"
 )
 
