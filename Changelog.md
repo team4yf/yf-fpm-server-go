@@ -1,5 +1,10 @@
 ## Changelog
 
+#### Sep 5
+
+Feature:
+- add `GetToken`, `GetRemoteIP`, `GetRequestID` functions for `ctx.Ctx`
+- change the Register Argument, it should contains `Name` & `Deps` 
 #### Sep 3 v0.2.0
 
 Feature:

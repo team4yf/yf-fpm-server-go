@@ -1,6 +1,10 @@
 package fpm
 
-import "github.com/team4yf/fpm-go-pkg/utils"
+import (
+	"time"
+
+	"github.com/team4yf/fpm-go-pkg/utils"
+)
 
 //APIReq api 请求体
 type APIReq struct {
@@ -20,6 +24,15 @@ type APIRsp struct {
 	Timestamp int64       `json:"timestamp"`
 	Data      interface{} `json:"data,omitempty"`
 	Error     interface{} `json:"error,omitempty"`
+}
+
+//ResponseOK 构建一个ok的响应体
+func ResponseOK(data interface{}) APIRsp {
+	return APIRsp{
+		Errno:     0,
+		Data:      data,
+		Timestamp: time.Now().Unix(),
+	}
 }
 
 //BizParam 业务的请求参数

@@ -17,6 +17,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
+	"github.com/team4yf/yf-fpm-server-go/errno"
 	"github.com/team4yf/yf-fpm-server-go/middleware"
 	"github.com/team4yf/yf-fpm-server-go/pkg/cache"
 	"github.com/team4yf/yf-fpm-server-go/pkg/db"
@@ -26,7 +27,7 @@ import (
 )
 
 var (
-	registerEvents []HookHandler
+	registerPlugins map[string]*Plugin
 
 	errNoMethod = errors.New("No method defined")
 
@@ -37,14 +38,18 @@ var (
 
 func init() {
 	tempMapData = make(map[string]interface{})
+	registerPlugins = make(map[string]*Plugin)
+}
+func Register(handler func(*Fpm)) {
+	RegisterByPlugin(&Plugin{
+		Name:    utils.GenShortID(),
+		Handler: handler,
+	})
 }
 
 //Register register some plugin
-func Register(event HookHandler) {
-	if len(registerEvents) < 1 {
-		registerEvents = make([]HookHandler, 0)
-	}
-	registerEvents = append(registerEvents, event)
+func RegisterByPlugin(event *Plugin) {
+	registerPlugins[event.Name] = event
 }
 
 //Fpm the core type defination
@@ -91,6 +96,15 @@ type Fpm struct {
 
 //HookHandler the hook handler
 type HookHandler func(*Fpm)
+
+//Plugin the plugin
+type Plugin struct {
+	Handler   func(*Fpm)
+	Name      string
+	Deps      []string
+	Installed bool
+	V         string
+}
 
 //FilterHandler the hook handler
 type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
@@ -238,29 +252,26 @@ func initOauth2(fpm *Fpm) {
 		querys := c.Querys()
 		gt := querys["grant_type"]
 		if "client_credentials" != gt {
-			c.JSON(map[string]interface{}{
-				"errno":   -1,
-				"message": "only support grant_type=client_credentials",
-			})
+			c.BizError(errno.OAuthOnlySupportClientErr)
 			return
 		}
 		id := querys["client_id"]
 		secret := querys["client_secret"]
+		//TODO need check here
 		if id != "123123123" || secret != "123123123" {
-			c.JSON(map[string]interface{}{
-				"errno":   -1,
-				"message": "id or secret error!",
-			})
+			c.BizError(errno.OAuthClientAuthErr)
 			return
 		}
 		scope := querys["scope"]
+		exp := 720000
 		tokenStr, _ := utils.GenerateToken(&jwt.MapClaims{
-			"id": id,
+			"id":  id,
+			"exp": exp,
 		})
 
 		c.JSON(map[string]interface{}{
 			"access_token": tokenStr,
-			"expires_in":   7200,
+			"expires_in":   exp,
 			"scope":        scope,
 			"token_type":   "Bearer",
 		})
@@ -271,8 +282,6 @@ func biz(c *ctx.Ctx, fpm *Fpm) {
 	method := c.Param("method")
 	module := c.Param("module")
 	method = module + "." + method
-	var rsp APIRsp
-	rsp.Timestamp = time.Now().Unix()
 	param := BizParam{}
 	if "POST" == c.GetRequest().Method {
 		c.ParseBody(&param)
@@ -284,25 +293,16 @@ func biz(c *ctx.Ctx, fpm *Fpm) {
 
 	data, err := fpm.Execute(method, &param)
 	if err != nil {
-		rsp.Message = err.Error()
-		rsp.Errno = -1
-		rsp.Error = err
-		c.Fail(rsp)
+		c.BizError(errno.Wrap(err))
 		return
 	}
-	rsp.Errno = 0
-	rsp.Data = data
+	c.JSON(ResponseOK(data))
 }
 
 func api(c *ctx.Ctx, fpm *Fpm) {
 	var data APIReq
-	var rsp APIRsp
-	rsp.Timestamp = time.Now().Unix()
 	if err := c.ParseBody(&data); err != nil {
-		rsp.Message = err.Error()
-		rsp.Errno = -1
-		rsp.Error = err
-		c.Fail(rsp)
+		c.BizError(errno.Wrap(err))
 		return
 	}
 	method := data.Method
@@ -312,18 +312,12 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 		switch data.Raw.(type) {
 		case string:
 			if err := utils.StringToStruct(data.Raw.(string), &p); err != nil {
-				rsp.Message = err.Error()
-				rsp.Errno = -1
-				rsp.Error = err
-				c.Fail(rsp)
+				c.BizError(errno.Wrap(err))
 				return
 			}
 		default:
 			if err := utils.Interface2Struct(data.Raw.(string), &p); err != nil {
-				rsp.Message = err.Error()
-				rsp.Errno = -1
-				rsp.Error = err
-				c.Fail(rsp)
+				c.BizError(errno.Wrap(err))
 				return
 			}
 		}
@@ -332,16 +326,10 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 
 	result, err := fpm.Execute(method, data.Param)
 	if err != nil {
-		rsp.Message = err.Error()
-		rsp.Errno = -1
-		rsp.Error = err
-		c.Fail(rsp)
+		c.BizError(errno.Wrap(err))
 		return
 	}
-	rsp.Errno = 0
-
-	rsp.Data = result
-	c.JSON(rsp)
+	c.JSON(ResponseOK(result))
 }
 
 func webhook(c *ctx.Ctx, fpm *Fpm) {
@@ -361,9 +349,7 @@ func webhook(c *ctx.Ctx, fpm *Fpm) {
 		fpm.Publish(fmt.Sprintf("#webhook/%s/%s", upstream, event), body)
 	}()
 
-	c.JSON(map[string]interface{}{
-		"errno": 0,
-	})
+	c.JSON(ResponseOK(1))
 }
 
 //Publish publish a message
@@ -445,12 +431,45 @@ func (fpm *Fpm) SetDatabase(name string, provider func() db.Database) {
 
 //loadPlugin load the plugins
 func (fpm *Fpm) loadPlugin() {
-	if len(registerEvents) < 1 {
-		return
+	//the plugin should contains dependence of the other
+	//we should make them run with sequence
+
+	for {
+		done := true
+		for name, event := range registerPlugins {
+			done = true
+			if event.Installed {
+				continue
+			}
+			done = false
+			if len(event.Deps) < 1 {
+				// no dep, run now
+				event.Installed = true
+				event.Handler(fpm)
+				continue
+			}
+			depDone := true
+			for _, d := range event.Deps {
+				p, ok := registerPlugins[d]
+				if !ok {
+					panic(fmt.Sprintf("plugin: %s required: %s, but now installed.", name, d))
+				}
+				if !p.Installed {
+					// dep not installed yet
+					depDone = false
+				}
+			}
+			if depDone {
+				// all deps installd
+				event.Installed = true
+				event.Handler(fpm)
+			}
+		}
+		if done {
+			break
+		}
 	}
-	for _, event := range registerEvents {
-		event(fpm)
-	}
+
 }
 
 //HasConfig return true if config in the configfile
@@ -461,6 +480,19 @@ func (fpm *Fpm) HasConfig(key string) bool {
 //GetConfig get the config from the configfile
 func (fpm *Fpm) GetConfig(key string) interface{} {
 	return viper.Get(key)
+}
+
+func (fpm *Fpm) InstalldPlugins() []string {
+	names := make([]string, 0)
+	for m, _ := range registerPlugins {
+		names = append(names, m)
+	}
+	return names
+}
+
+func (fpm *Fpm) IsInstalledPlugin(name string) bool {
+	_, ok := registerPlugins[name]
+	return ok
 }
 
 //FetchConfig fetch config to the c

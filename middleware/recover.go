@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
-	"fmt"
+
 	"github.com/team4yf/fpm-go-pkg/log"
 )
 
@@ -14,9 +15,9 @@ func Recover(next http.Handler) http.Handler {
 			if err := recover(); err != nil {
 				if !strings.HasPrefix(r.URL.String(), "/api") && r.Method == "POST" {
 					log.Errorf("URL: %s, METHOD: %s, Error: %+v\n", r.URL.String(), r.Method, err)
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 					return
-				}	
+				}
 				//
 				http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 			}
