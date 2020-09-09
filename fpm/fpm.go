@@ -15,14 +15,14 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
+	"github.com/team4yf/fpm-go-pkg/log"
+	"github.com/team4yf/fpm-go-pkg/utils"
 	"github.com/team4yf/yf-fpm-server-go/config"
 	"github.com/team4yf/yf-fpm-server-go/ctx"
 	"github.com/team4yf/yf-fpm-server-go/errno"
 	"github.com/team4yf/yf-fpm-server-go/middleware"
 	"github.com/team4yf/yf-fpm-server-go/pkg/cache"
 	"github.com/team4yf/yf-fpm-server-go/pkg/db"
-	"github.com/team4yf/fpm-go-pkg/log"
-	"github.com/team4yf/fpm-go-pkg/utils"
 	"github.com/team4yf/yf-fpm-server-go/version"
 )
 
@@ -40,6 +40,8 @@ func init() {
 	tempMapData = make(map[string]interface{})
 	registerPlugins = make(map[string]*Plugin)
 }
+
+//Register register a nonamed plugin
 func Register(handler func(*Fpm)) {
 	RegisterByPlugin(&Plugin{
 		Name:    utils.GenShortID(),
@@ -47,7 +49,7 @@ func Register(handler func(*Fpm)) {
 	})
 }
 
-//Register register some plugin
+//RegisterByPlugin register some plugin
 func RegisterByPlugin(event *Plugin) {
 	registerPlugins[event.Name] = event
 }
@@ -482,14 +484,16 @@ func (fpm *Fpm) GetConfig(key string) interface{} {
 	return viper.Get(key)
 }
 
+//InstalldPlugins get all installed plugins
 func (fpm *Fpm) InstalldPlugins() []string {
 	names := make([]string, 0)
-	for m, _ := range registerPlugins {
+	for m := range registerPlugins {
 		names = append(names, m)
 	}
 	return names
 }
 
+//IsInstalledPlugin check if the plugin installed
 func (fpm *Fpm) IsInstalledPlugin(name string) bool {
 	_, ok := registerPlugins[name]
 	return ok
