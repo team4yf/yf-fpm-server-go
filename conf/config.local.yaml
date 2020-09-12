@@ -1,0 +1,4 @@
+auth:
+    enable: true
+    username: admin
+    password: "123123123"

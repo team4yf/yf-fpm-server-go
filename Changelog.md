@@ -1,5 +1,10 @@
 ## Changelog
 
+#### Sep 12
+
+Feature:
+- add `Basic Auth` for `/biz` to protect the api
+
 #### Sep 5
 
 Feature:
