@@ -607,6 +607,9 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error
 	if ok, err = fpm.runFilter("_"+biz+"_after", biz, args); !ok {
 		log.Errorf("run _%s_after error: %v", biz, err)
 	}
+	if data == nil {
+		data = 1
+	}
 	return
 }
 
