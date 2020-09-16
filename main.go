@@ -2,17 +2,18 @@ package main
 
 import (
 	"errors"
-	"time"
 	"fmt"
-	"github.com/team4yf/yf-fpm-server-go/fpm"
+	"time"
+
 	"github.com/team4yf/fpm-go-pkg/log"
+	"github.com/team4yf/yf-fpm-server-go/fpm"
 )
 
 func main() {
 
 	fpm.RegisterByPlugin(&fpm.Plugin{
 		Name: "fpm-plugin-1",
-		Handler: func(*fpm.Fpm){
+		Handler: func(*fpm.Fpm) {
 			fmt.Println("load fpm-plugin-1 ok")
 		},
 		Deps: []string{"fpm-plugin-2"},
@@ -20,7 +21,7 @@ func main() {
 
 	fpm.RegisterByPlugin(&fpm.Plugin{
 		Name: "fpm-plugin-2",
-		Handler: func(*fpm.Fpm){
+		Handler: func(*fpm.Fpm) {
 			fmt.Println("load fpm-plugin-2 ok")
 		},
 	})
@@ -37,6 +38,10 @@ func main() {
 		err = errors.New("foo stub")
 		time.Sleep(1 * time.Second)
 		data = 1
+		return
+	}
+	bizModule["echo"] = func(param *fpm.BizParam) (data interface{}, err error) {
+		data = "boom!!!"
 		return
 	}
 	app.AddBizModule("foo", &bizModule)

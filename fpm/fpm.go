@@ -231,7 +231,6 @@ func (fpm *Fpm) Init() {
 
 	fpm.Use(middleware.Recover)
 
-	
 	if fpm.HasConfig("auth") {
 		basicAuthConfig := middleware.BasicAuthConfig{
 			Enable: false,
@@ -241,7 +240,7 @@ func (fpm *Fpm) Init() {
 		}
 		fpm.Use(middleware.BasicAuth(&basicAuthConfig))
 	}
-	
+
 	fpm.BindHandler("/api", api).Methods("POST")
 
 	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")
@@ -249,6 +248,9 @@ func (fpm *Fpm) Init() {
 	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	initOauth2(fpm)
+
+	registerPrometheus(fpm)
+
 	fpm.runHook("AFTER_INIT")
 }
 
@@ -572,30 +574,40 @@ func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 }
 
 //Execute 执行具体的业务函数
-func (fpm *Fpm) Execute(biz string, args *BizParam) (interface{}, error) {
-	if ok, err := fpm.runFilter("_"+biz+"_before", biz, args); !ok {
-		return nil, err
+func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error) {
+	defer func() {
+		if err != nil {
+			incBizExecuteVec(biz, "fail")
+		} else {
+			incBizExecuteVec(biz, "success")
+		}
+	}()
+	ok := false
+	if ok, err = fpm.runFilter("_"+biz+"_before", biz, args); !ok {
+		return
 	}
 	bizPath := strings.Split(biz, ".")
 	moduleName := bizPath[0]
 	module, exists := fpm.modules[moduleName]
 	if !exists {
-		return nil, errNoMethod
+		err = errNoMethod
+		return
 	}
 	bizName := strings.Join(bizPath[1:], ".")
 	handler, exists := (*module)[bizName]
 	if !exists {
-		return nil, errNoMethod
+		err = errNoMethod
+		return
 	}
-	result, err := handler(args)
+	data, err = handler(args)
 	if err != nil {
-		return nil, err
+		return
 	}
-	(*args)["__result__"] = result
-	if ok, err := fpm.runFilter("_"+biz+"_after", biz, args); !ok {
+	(*args)["__result__"] = data
+	if ok, err = fpm.runFilter("_"+biz+"_after", biz, args); !ok {
 		log.Errorf("run _%s_after error: %v", biz, err)
 	}
-	return result, nil
+	return
 }
 
 //Use add some middleware
