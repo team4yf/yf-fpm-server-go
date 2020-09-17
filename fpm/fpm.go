@@ -245,13 +245,19 @@ func (fpm *Fpm) Init() {
 
 	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")
 	fpm.BindHandler("/webhook/{upstream}/{event}/{method}", webhook).Methods("POST")
-	fpm.routers.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-
+	fpm.SetStatic("/static/", "./static")
 	initOauth2(fpm)
 
 	registerPrometheus(fpm)
 
 	fpm.runHook("AFTER_INIT")
+}
+
+//SetStatic set static
+// prefix should starts and ends with slash like: /static/
+// dir can be a relative or absolte filepath
+func (fpm *Fpm) SetStatic(prefix, dir string) {
+	fpm.routers.PathPrefix(prefix).Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dir))))
 }
 
 //GetAppInfo get the basic info of the app from the config
