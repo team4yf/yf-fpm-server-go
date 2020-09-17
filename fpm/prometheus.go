@@ -1,6 +1,9 @@
 package fpm
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
 
 var (
 	bizExecuteVec = prometheus.NewCounterVec(
@@ -16,7 +19,7 @@ var (
 
 func registerPrometheus(fpmApp *Fpm) {
 	prometheus.MustRegister(bizExecuteVec)
-	fpmApp.routers.Handle("/metrics", prometheus.Handler())
+	fpmApp.routers.Handle("/metrics", promhttp.Handler())
 }
 
 func incBizExecuteVec(method, result string) {
