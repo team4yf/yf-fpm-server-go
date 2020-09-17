@@ -249,6 +249,7 @@ func (fpm *Fpm) Init() {
 	initOauth2(fpm)
 
 	registerPrometheus(fpm)
+	attachProfiler(fpm.routers)
 
 	fpm.runHook("AFTER_INIT")
 }
