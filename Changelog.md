@@ -1,5 +1,11 @@
 ## Changelog
 
+#### Sep 17
+
+Feature:
+- add `/metrics` for prometheus.
+- add `/debug/pprof/` for debug
+
 #### Sep 12
 
 Feature:
