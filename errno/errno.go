@@ -13,7 +13,7 @@ var (
 )
 
 type BizError struct {
-	Code    int    `json:"code"`
+	Code    int    `json:"errno"`
 	Message string `json:"message,omitempty"`
 }
 
