@@ -4,6 +4,7 @@
 
 Feature:
 - add `grpc` for biz api methods.
+  - should add `fpm-go-plugin-grpc`
 
 #### Sep 17
 
