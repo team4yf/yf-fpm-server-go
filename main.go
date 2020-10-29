@@ -1,11 +1,11 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/team4yf/fpm-go-pkg/log"
+	"github.com/team4yf/yf-fpm-server-go/errno"
 	"github.com/team4yf/yf-fpm-server-go/fpm"
 )
 
@@ -35,7 +35,7 @@ func main() {
 
 	bizModule := make(fpm.BizModule, 0)
 	bizModule["bar"] = func(param *fpm.BizParam) (data interface{}, err error) {
-		err = errors.New("foo stub")
+		err = errno.New(-11, "foo stub")
 		time.Sleep(1 * time.Second)
 		data = 1
 		return

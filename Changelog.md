@@ -1,5 +1,10 @@
 ## Changelog
 
+#### Otc 29
+
+Feature:
+- support user defined error
+
 #### Otc 15
 
 Feature:

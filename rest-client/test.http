@@ -14,6 +14,10 @@ Content-Type: application/json
 }
 
 
+### test api
+GET {{host}}/biz/foo/bar
+Authorization: Basic admin:123123123
+
 
 ### test webhook
 POST {{host}}/webhook/test/foo/foo.bar
