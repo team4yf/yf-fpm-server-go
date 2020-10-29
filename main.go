@@ -27,7 +27,7 @@ func main() {
 	})
 
 	app := fpm.New()
-
+	app.HealthCheckData.Version = "1"
 	app.Init()
 
 	info := app.GetAppInfo()

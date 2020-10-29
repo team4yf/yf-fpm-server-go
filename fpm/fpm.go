@@ -94,6 +94,9 @@ type Fpm struct {
 
 	//database interface
 	database map[string]func() db.Database
+
+	//health check data
+	HealthCheckData *HealthCheckRsp
 }
 
 //HookHandler the hook handler
@@ -138,6 +141,17 @@ type Hook struct {
 type Filter struct {
 	f FilterHandler
 	p int
+}
+
+//HealthCheckRsp health check rsp
+type HealthCheckRsp struct {
+	Status    string     `json:"status"`
+	Hostname  string     `json:"hostname"`
+	StartAt   *time.Time `json:"startAt"`
+	Version   string     `json:"version"`
+	BuildAt   string     `json:"buildAt"`
+	GitHashID string     `json:"gitHashId"`
+	GitBranch string     `json:"gitBranch"`
 }
 
 //NewHook create a new hook
@@ -198,6 +212,15 @@ func NewWithConfig(configFile string) *Fpm {
 		Version: version.Version,
 		Addr:    ":9090",
 	}
+	fpm.HealthCheckData = &HealthCheckRsp{
+		Status:    "UP",
+		StartAt:   &fpm.starttime,
+		Hostname:  utils.GetHostname(),
+		Version:   fpm.v,
+		BuildAt:   fpm.buildAt,
+		GitBranch: "master",
+		GitHashID: "-",
+	}
 
 	if err := viper.Unmarshal(&(fpm.appInfo)); err != nil {
 		panic(err)
@@ -222,7 +245,7 @@ func (fpm *Fpm) Init() {
 	fpm.runHook("BEFORE_INIT")
 
 	fpm.BindHandler("/health", func(c *ctx.Ctx, _ *Fpm) {
-		c.JSON(map[string]interface{}{"status": "UP", "startAt": fpm.starttime, "version": fpm.v, "buildAt": fpm.buildAt})
+		c.JSON(fpm.HealthCheckData)
 	}).Methods("GET")
 
 	fpm.BindHandler("/ping", func(c *ctx.Ctx, _ *Fpm) {

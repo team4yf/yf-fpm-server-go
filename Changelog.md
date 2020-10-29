@@ -4,6 +4,11 @@
 
 Feature:
 - support user defined error
+- support define health check
+  ```golang
+  app := fpm.New()
+  app.HealthCheckData.Version = "1" // 此处可以修改对应的版本号等
+  ```
 
 #### Otc 15
 
