@@ -29,7 +29,7 @@ import (
 var (
 	registerPlugins map[string]*Plugin
 
-	errNoMethod = errors.New("No method defined")
+	errNoMethod = errors.New("NO_METHOD_DEFINED")
 
 	defaultInstance *Fpm
 
@@ -54,7 +54,7 @@ func RegisterByPlugin(event *Plugin) {
 	registerPlugins[event.Name] = event
 }
 
-//Fpm the core type defination
+//Fpm the core type definition
 type Fpm struct {
 	// the start time of the instance
 	starttime time.Time
@@ -118,11 +118,6 @@ type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
 type MessageHandler func(topic string, data interface{})
 
 //AppInfo the basic config of the app
-//"mode": "release",
-// "domain": "",
-// "version": "",
-// "addr": ":9090",
-// "name": "fpm-server",
 type AppInfo struct {
 	Mode    string
 	Domain  string
@@ -173,17 +168,12 @@ func NewFilter(f FilterHandler, p int) *Filter {
 //Handler the bizHandler
 type Handler func(*ctx.Ctx, *Fpm)
 
-//New 使用默认配置的构造函数
+//New create with default configFile
 func New() *Fpm {
 	return NewWithConfig("")
 }
 
-//NewWithConfig 初始化函数
-//路由加载
-//插件加载
-//加载中间件
-//执行init钩子函数
-// BEFORE_INIT -> AFTER_INIT -> BEFORE_START -> BEFORE_SHUTDOWN(not sure) -> AFTER_SHUTDOWN(not sure)
+//NewWithConfig create with specified configFile
 func NewWithConfig(configFile string) *Fpm {
 	if defaultInstance != nil {
 		return defaultInstance
@@ -235,12 +225,17 @@ func NewWithConfig(configFile string) *Fpm {
 	return fpm
 }
 
-//Default 获取默认的实例，通常可以避免不断传递 fpm 实例的引用
+//Default get pointer of default instance
 func Default() *Fpm {
 	return defaultInstance
 }
 
-//Init run the init
+//Init init the server instance
+// - load routers
+// - load plugins
+// - load middlewares
+// - execute init hooks
+// - run hooks BEFORE_INIT -> AFTER_INIT -> BEFORE_START -> BEFORE_SHUTDOWN(not sure) -> AFTER_SHUTDOWN(not sure)
 func (fpm *Fpm) Init() {
 	fpm.runHook("BEFORE_INIT")
 
@@ -297,7 +292,7 @@ func initOauth2(fpm *Fpm) {
 	fpm.BindHandler("/oauth/token", func(c *ctx.Ctx, fpm *Fpm) {
 		querys := c.Querys()
 		gt := querys["grant_type"]
-		if "client_credentials" != gt {
+		if gt != "client_credentials" {
 			c.BizError(errno.OAuthOnlySupportClientErr)
 			return
 		}
@@ -329,7 +324,7 @@ func biz(c *ctx.Ctx, fpm *Fpm) {
 	module := c.Param("module")
 	method = module + "." + method
 	param := BizParam{}
-	if "POST" == c.GetRequest().Method {
+	if c.GetRequest().Method == "POST" {
 		c.ParseBody(&param)
 	} else {
 		//Get
@@ -506,7 +501,7 @@ func (fpm *Fpm) loadPlugin() {
 				}
 			}
 			if depDone {
-				// all deps installd
+				// all dependency installed
 				event.Installed = true
 				event.Handler(fpm)
 			}
@@ -515,7 +510,6 @@ func (fpm *Fpm) loadPlugin() {
 			break
 		}
 	}
-
 }
 
 //HasConfig return true if config in the configfile
@@ -528,8 +522,8 @@ func (fpm *Fpm) GetConfig(key string) interface{} {
 	return viper.Get(key)
 }
 
-//InstalldPlugins get all installed plugins
-func (fpm *Fpm) InstalldPlugins() []string {
+//InstalledPlugins get all installed plugins
+func (fpm *Fpm) InstalledPlugins() []string {
 	names := make([]string, 0)
 	for m := range registerPlugins {
 		names = append(names, m)
@@ -555,7 +549,7 @@ func (fpm *Fpm) FetchConfig(key string, c interface{}) error {
 	return nil
 }
 
-//runHook 执行钩子函数
+//runHook run hooks
 func (fpm *Fpm) runHook(hookName string) {
 	hooks, exists := fpm.hooks[hookName]
 	if !exists || len(hooks) < 1 {
@@ -568,7 +562,7 @@ func (fpm *Fpm) runHook(hookName string) {
 	}
 }
 
-//runFilter 执行过滤器函数
+//runFilter run filter functions
 func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam) (bool, error) {
 	filters, exists := fpm.filters[filterName]
 	if !exists || len(filters) < 1 {
@@ -583,7 +577,7 @@ func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam) (bool, 
 	return true, nil
 }
 
-//AddFilter 增加一个钩子函数
+//AddFilter add a filter function
 func (fpm *Fpm) AddFilter(filterName, event string, handler FilterHandler, priority int) {
 	filters, exists := fpm.filters["_"+filterName+"_"+event]
 	if !exists {
@@ -593,7 +587,7 @@ func (fpm *Fpm) AddFilter(filterName, event string, handler FilterHandler, prior
 	fpm.filters["_"+filterName+"_"+event] = filters
 }
 
-//AddHook 增加一个钩子函数
+//AddHook add a hook function
 func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 	hooks, exists := fpm.hooks[hookName]
 	if !exists {
@@ -603,7 +597,7 @@ func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 	fpm.hooks[hookName] = hooks
 }
 
-//Execute 执行具体的业务函数
+//Execute execute biz function
 func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error) {
 	defer func() {
 		if err != nil {
@@ -633,7 +627,7 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error
 	if err != nil {
 		return
 	}
-	(*args)["__result__"] = data
+	(*args).__result__ = data
 	if ok, err = fpm.runFilter("_"+biz+"_after", biz, args); !ok {
 		log.Errorf("run _%s_after error: %v", biz, err)
 	}
@@ -650,12 +644,12 @@ func (fpm *Fpm) Use(mws ...func(next http.Handler) http.Handler) {
 	}
 }
 
-//AddBizModule 添加业务函数组
+//AddBizModule add biz module
 func (fpm *Fpm) AddBizModule(name string, module *BizModule) {
 	fpm.modules[name] = module
 }
 
-//BindHandler 绑定接口路由
+//BindHandler bind router handler
 func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		handler(ctx.WrapCtx(w, r), fpm)
@@ -664,7 +658,7 @@ func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 
 }
 
-//Run 启动程序
+//Run startup server
 func (fpm *Fpm) Run() {
 	fpm.runHook("BEFORE_START")
 	fpm.starttime = time.Now()
@@ -712,5 +706,4 @@ func (fpm *Fpm) Run() {
 	// to finalize based on context cancellation.
 	log.Info("shutting down")
 	os.Exit(0)
-
 }

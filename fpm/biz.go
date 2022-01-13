@@ -36,7 +36,9 @@ func ResponseOK(data interface{}) APIRsp {
 }
 
 //BizParam 业务的请求参数
-type BizParam map[string]interface{}
+type BizParam struct {
+	__result__ interface{} `json:"__result__,omitempty"`
+}
 
 //Convert 将参数转换成实体对象
 func (p *BizParam) Convert(obj interface{}) error {
