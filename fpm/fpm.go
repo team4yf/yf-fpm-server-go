@@ -259,6 +259,16 @@ func (fpm *Fpm) Init() {
 		fpm.Use(middleware.BasicAuth(&basicAuthConfig))
 	}
 
+	if fpm.HasConfig("serverAuth") {
+		serverAuthConfig := middleware.ServerAuthConfig{
+			Enable: false,
+		}
+		if err := fpm.FetchConfig("serverAuth", &serverAuthConfig); err != nil {
+			panic(err)
+		}
+		fpm.Use(middleware.ServerAuth(&serverAuthConfig))
+	}
+
 	fpm.BindHandler("/api", api).Methods("POST")
 
 	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")
