@@ -108,6 +108,15 @@ func (c *Ctx) JSON(data interface{}) {
 	json.NewEncoder(c.w).Encode(data)
 }
 
+//JSONWithoutHTMLEscape output the json without html escaping
+func (c *Ctx) JSONWithoutHTMLEscape(data interface{}) {
+	c.w.Header().Set("Content-Type", "application/json")
+	c.w.WriteHeader(http.StatusOK)
+	encoder := json.NewEncoder(c.w)
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(data)
+}
+
 //ParseBody parse the request body to the data
 func (c *Ctx) ParseBody(data interface{}) (err error) {
 	err = utils.GetBodyStruct(c.request.Body, data)
