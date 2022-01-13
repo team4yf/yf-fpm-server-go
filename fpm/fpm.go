@@ -279,6 +279,16 @@ func (fpm *Fpm) Init() {
 		fpm.Use(middleware.JwtAuth(&jwtAuthConfig))
 	}
 
+	if fpm.HasConfig("aspectLog") {
+		aspectLogConfig := middleware.AspectLogConfig{
+			Enable: false,
+		}
+		if err := fpm.FetchConfig("aspectLog", &aspectLogConfig); err != nil {
+			panic(err)
+		}
+		fpm.Use(middleware.AspectLog(&aspectLogConfig))
+	}
+
 	fpm.BindHandler("/api", api).Methods("POST")
 
 	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")

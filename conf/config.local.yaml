@@ -19,3 +19,9 @@ jwtAuth:
   enable: true
   pattern:
     - "/biz/*/*"
+
+aspectLog:
+  enable: true
+  app: "server"
+  pattern:
+    - "/biz/*/*"
