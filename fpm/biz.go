@@ -6,7 +6,7 @@ import (
 	"github.com/team4yf/fpm-go-pkg/utils"
 )
 
-//APIReq api 请求体
+//APIReq api request body
 type APIReq struct {
 	Method    string      `json:"method"`
 	Appkey    string      `json:"appkey"`
@@ -17,7 +17,7 @@ type APIReq struct {
 	Param     *BizParam
 }
 
-//APIRsp api 响应体
+//APIRsp api response body
 type APIRsp struct {
 	Errno     int         `json:"errno"`
 	Message   string      `json:"message"`
@@ -26,7 +26,7 @@ type APIRsp struct {
 	Error     interface{} `json:"error,omitempty"`
 }
 
-//ResponseOK 构建一个ok的响应体
+//ResponseOK create a success response
 func ResponseOK(data interface{}) APIRsp {
 	return APIRsp{
 		Errno:     0,
@@ -35,8 +35,12 @@ func ResponseOK(data interface{}) APIRsp {
 	}
 }
 
-//BizParam 业务的请求参数
-type BizParam map[string]interface{}
+//BizParam method param
+type BizParam struct {
+	__pre__    map[int]interface{}
+	__result__ interface{} `json:"__result__,omitempty"`
+	__post__   map[int]interface{}
+}
 
 //Convert 将参数转换成实体对象
 func (p *BizParam) Convert(obj interface{}) error {

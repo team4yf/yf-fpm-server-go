@@ -10,6 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/viper v1.7.1
+	github.com/stretchr/testify v1.6.1
 	github.com/team4yf/fpm-go-pkg v0.0.0-20201029024727-40ba3189a192
 	github.com/tebeka/strftime v0.1.5 // indirect
 )
