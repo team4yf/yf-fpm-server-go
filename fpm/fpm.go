@@ -269,6 +269,16 @@ func (fpm *Fpm) Init() {
 		fpm.Use(middleware.ServerAuth(&serverAuthConfig))
 	}
 
+	if fpm.HasConfig("jwtAuth") {
+		jwtAuthConfig := middleware.JwtAuthConfig{
+			Enable: false,
+		}
+		if err := fpm.FetchConfig("jwtAuth", &jwtAuthConfig); err != nil {
+			panic(err)
+		}
+		fpm.Use(middleware.JwtAuth(&jwtAuthConfig))
+	}
+
 	fpm.BindHandler("/api", api).Methods("POST")
 
 	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")
@@ -293,6 +303,29 @@ func (fpm *Fpm) SetStatic(prefix, dir string) {
 func (fpm *Fpm) GetAppInfo() *AppInfo {
 	return fpm.appInfo
 }
+
+type TokenInfo struct {
+	AccessToken string `json:"access_token"`
+	Expired     int64  `json:"expires_in"`
+	Scope       string `json:"scope"`
+	TokenType   string `json:"token_type"`
+}
+
+//Generate a token
+func GenerateToken(id, scope string, exp int) *TokenInfo {
+	expTime := time.Now().Add(time.Second * time.Duration(exp))
+	tokenStr, _ := utils.GenerateToken(&jwt.MapClaims{
+		"id":  id,
+		"exp": expTime.Unix(),
+	})
+	return &TokenInfo{
+		AccessToken: tokenStr,
+		Expired:     expTime.Unix(),
+		Scope:       scope,
+		TokenType:   "Bearer",
+	}
+}
+
 func initOauth2(fpm *Fpm) {
 
 	//grant_type=client_credentials&client_id=000000&client_secret=999999&scope=read
@@ -314,18 +347,8 @@ func initOauth2(fpm *Fpm) {
 			return
 		}
 		scope := querys["scope"]
-		exp := 720000
-		tokenStr, _ := utils.GenerateToken(&jwt.MapClaims{
-			"id":  id,
-			"exp": exp,
-		})
-
-		c.JSON(map[string]interface{}{
-			"access_token": tokenStr,
-			"expires_in":   exp,
-			"scope":        scope,
-			"token_type":   "Bearer",
-		})
+		token := GenerateToken(id, scope, 7200)
+		c.JSON(token)
 	}).Methods("GET")
 }
 

@@ -1,16 +1,21 @@
 auth:
-    enable: false
-    username: admin
-    pattern:
-        - "/game/*/*"
-    password: "123123123"
+  enable: false
+  username: admin
+  pattern:
+    - "/game/*/*"
+  password: "123123123"
 
 serverAuth:
-    enable: true
-    match:
-      biz:
-        header: "server-auth"
-        pattern:
-          - "/biz/*/*"
-        keys:
-          - "abc"
+  enable: true
+  match:
+    biz:
+      header: "server-auth"
+      pattern:
+        - "/api"
+      keys:
+        - "abc"
+
+jwtAuth:
+  enable: true
+  pattern:
+    - "/biz/*/*"
