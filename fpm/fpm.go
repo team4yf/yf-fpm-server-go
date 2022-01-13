@@ -112,7 +112,7 @@ type Plugin struct {
 }
 
 //FilterHandler the hook handler
-type FilterHandler func(app *Fpm, biz string, args *BizParam) (bool, error)
+type FilterHandler func(fpm *Fpm, biz string, args *BizParam) (bool, interface{}, error)
 
 //MessageHandler message handler
 type MessageHandler func(topic string, data interface{})
@@ -293,13 +293,47 @@ func (fpm *Fpm) Init() {
 
 	fpm.BindHandler("/biz/{module}/{method}", biz).Methods("POST", "GET")
 	fpm.BindHandler("/webhook/{upstream}/{event}/{method}", webhook).Methods("POST")
+	fpm.BindHandler("/oauth/user/{method}", userAuth).Methods("POST")
 	fpm.SetStatic("/static/", "./static")
 	initOauth2(fpm)
 
 	registerPrometheus(fpm)
 	attachProfiler(fpm.routers)
-
+	initUserModule(fpm)
 	fpm.runHook("AFTER_INIT")
+}
+
+func userAuth(c *ctx.Ctx, fpm *Fpm) {
+	method := c.Param("method")
+	param := BizParam{}
+	c.ParseBody(&param)
+
+	data, err := fpm.Execute(fmt.Sprintf("user.%s", method), &param)
+	if err != nil {
+		c.BizError(errno.Wrap(err))
+		return
+	}
+	c.JSON(ResponseOK(data))
+}
+
+func initUserModule(fpm *Fpm) {
+	bizModule := make(BizModule, 0)
+	bizModule["login"] = func(param *BizParam) (data interface{}, err error) {
+		if param.__pre__ == nil {
+			// no user login filer
+			err = errors.New("NO_USER_LOGIN_FILTER")
+			return
+		}
+		user, ok := param.__pre__[1]
+		if !ok {
+			// no user login filer
+			err = errors.New("NO_USER_LOGIN_FILTER")
+			return
+		}
+		data = GenerateToken(user, "api", 7200)
+		return
+	}
+	fpm.AddBizModule("user", &bizModule)
 }
 
 //SetStatic set static
@@ -322,11 +356,11 @@ type TokenInfo struct {
 }
 
 //Generate a token
-func GenerateToken(id, scope string, exp int) *TokenInfo {
+func GenerateToken(user interface{}, scope string, exp int) *TokenInfo {
 	expTime := time.Now().Add(time.Second * time.Duration(exp))
 	tokenStr, _ := utils.GenerateToken(&jwt.MapClaims{
-		"id":  id,
-		"exp": expTime.Unix(),
+		"user": user,
+		"exp":  expTime.Unix(),
 	})
 	return &TokenInfo{
 		AccessToken: tokenStr,
@@ -613,8 +647,20 @@ func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam) (bool, 
 		return true, nil
 	}
 	for _, filter := range filters {
-		if ok, err := filter.f(fpm, biz, args); !ok {
+		ok, result, err := filter.f(fpm, biz, args)
+		if !ok {
 			return false, err
+		}
+		if strings.HasSuffix(filterName, "_before") {
+			if args.__pre__ == nil {
+				args.__pre__ = map[int]interface{}{}
+			}
+			args.__pre__[filter.p] = result
+		} else {
+			if args.__post__ == nil {
+				args.__post__ = map[int]interface{}{}
+			}
+			args.__post__[filter.p] = result
 		}
 	}
 	return true, nil

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -45,6 +46,10 @@ func main() {
 		return
 	}
 	app.AddBizModule("foo", &bizModule)
+
+	app.AddFilter("user.login", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, interface{}, error) {
+		return true, "userId", errors.New("login failed")
+	}, 1)
 
 	app.Run()
 
