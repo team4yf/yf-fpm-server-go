@@ -727,6 +727,18 @@ func (fpm *Fpm) AddBizModule(name string, module *BizModule) {
 	fpm.modules[name] = module
 }
 
+//ExtendBizModule extend existed module
+func (fpm *Fpm) ExtendBizModule(name string, module *BizModule) {
+	m, ok := fpm.modules[name]
+	if !ok {
+		fpm.modules[name] = module
+		return
+	}
+	for k, handler := range *module {
+		(*m)[k] = handler
+	}
+}
+
 //BindHandler bind router handler
 func (fpm *Fpm) BindHandler(url string, handler Handler) *mux.Route {
 	f := func(w http.ResponseWriter, r *http.Request) {
