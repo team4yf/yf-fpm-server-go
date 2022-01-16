@@ -8,8 +8,8 @@ auth:
 serverAuth:
   enable: true
   match:
-    biz:
-      header: "server-auth"
+    fpm:
+      header: "FPM-SERVER-KEY"
       pattern:
         - "/api"
       keys:
@@ -25,3 +25,4 @@ aspectLog:
   app: "server"
   pattern:
     - "/biz/*/*"
+    - "/api"
