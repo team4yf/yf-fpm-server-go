@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/team4yf/fpm-go-pkg/log"
@@ -41,9 +42,8 @@ func AspectLog(aspectLogConfig *AspectLogConfig) func(h http.Handler) http.Handl
 			var requestData string
 			contentType := r.Header.Get("Content-Type")
 			if r.Method == "POST" {
-				switch contentType {
-				// 如果是 json 的，则将json取出来
-				case "application/json":
+				if strings.Contains(contentType, "application/json") {
+
 					if r.Body != nil {
 						data, _ := ioutil.ReadAll(r.Body)
 						// 这里需要将原来的数据还原回去，否则后面的handler获取不到原来的请求数据
@@ -51,7 +51,6 @@ func AspectLog(aspectLogConfig *AspectLogConfig) func(h http.Handler) http.Handl
 						requestData = string(data)
 					}
 				}
-
 			}
 
 			//开始时间

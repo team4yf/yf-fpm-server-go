@@ -319,12 +319,7 @@ func userAuth(c *ctx.Ctx, fpm *Fpm) {
 func initUserModule(fpm *Fpm) {
 	bizModule := make(BizModule, 0)
 	bizModule["login"] = func(param *BizParam) (data interface{}, err error) {
-		if param.__pre__ == nil {
-			// no user login filer
-			err = errors.New("NO_USER_LOGIN_FILTER")
-			return
-		}
-		user, ok := param.__pre__[1]
+		user, ok := param.Pre()[1]
 		if !ok {
 			// no user login filer
 			err = errors.New("NO_USER_LOGIN_FILTER")
@@ -652,15 +647,9 @@ func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam) (bool, 
 			return false, err
 		}
 		if strings.HasSuffix(filterName, "_before") {
-			if args.__pre__ == nil {
-				args.__pre__ = map[int]interface{}{}
-			}
-			args.__pre__[filter.p] = result
+			args.Pre()[filter.p] = result
 		} else {
-			if args.__post__ == nil {
-				args.__post__ = map[int]interface{}{}
-			}
-			args.__post__[filter.p] = result
+			args.Post()[filter.p] = result
 		}
 	}
 	return true, nil
@@ -716,7 +705,7 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error
 	if err != nil {
 		return
 	}
-	(*args).__result__ = data
+	args.SetResult(data)
 	if ok, err = fpm.runFilter("_"+biz+"_after", biz, args); !ok {
 		log.Errorf("run _%s_after error: %v", biz, err)
 	}

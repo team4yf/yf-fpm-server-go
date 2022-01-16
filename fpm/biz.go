@@ -35,16 +35,52 @@ func ResponseOK(data interface{}) APIRsp {
 	}
 }
 
-//BizParam method param
-type BizParam struct {
-	__pre__    map[int]interface{}
-	__result__ interface{} `json:"__result__,omitempty"`
-	__post__   map[int]interface{}
+type IBizParam interface {
+	Pre() map[int]interface{}
+	GetResult() interface{}
+	SetResult(interface{})
+	Post() map[int]interface{}
+	Convert(interface{}) error
 }
+
+//BizParam method param
+type BizParam map[string]interface{}
+
+// type BizParam struct {
+// 	__pre__    map[int]interface{}
+// 	__result__ interface{} `json:"__result__,omitempty"`
+// 	__post__   map[int]interface{}
+// }
 
 //Convert 将参数转换成实体对象
 func (p *BizParam) Convert(obj interface{}) error {
 	return utils.Interface2Struct(p, &obj)
+}
+
+func (p *BizParam) GetResult() interface{} {
+	return (*p)["__result__"]
+}
+
+func (p *BizParam) SetResult(obj interface{}) {
+	(*p)["__result__"] = obj
+}
+
+func (p *BizParam) Pre() map[int]interface{} {
+	if pre, ok := (*p)["__pre__"]; ok {
+		return pre.(map[int]interface{})
+	}
+	pre := make(map[int]interface{})
+	(*p)["__pre__"] = pre
+	return pre
+}
+
+func (p *BizParam) Post() map[int]interface{} {
+	if post, ok := (*p)["__post__"]; ok {
+		return post.(map[int]interface{})
+	}
+	post := make(map[int]interface{})
+	(*p)["__post__"] = post
+	return post
 }
 
 //BizHandler 具体的业务处理函数
