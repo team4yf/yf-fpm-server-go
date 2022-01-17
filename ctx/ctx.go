@@ -82,13 +82,21 @@ func (c *Ctx) GetRequestID() (id string) {
 }
 
 //GetToken get token from request header
-// it's `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMzEyMzEyMyJ9.5KEyBxDH2NGVKoiA0J6IPB4QPlvZi9zPH9SSKTWF2h8` in header[`Authorization`]
 func (c *Ctx) GetToken() string {
-	token := c.request.Header.Get("Authorization")
-	if strings.HasPrefix(token, "Bearer ") {
-		return token[7:]
+	for _, k := range []string{"Authorization", "authorization"} {
+		token := c.request.Header.Get(k)
+		if token == "" {
+			continue
+		}
+		if strings.HasPrefix(token, "Bearer ") {
+			return token[7:]
+		}
+		if strings.HasPrefix(token, "bearer ") {
+			return token[7:]
+		}
+		return token
 	}
-	return token
+	return ""
 }
 
 //QueryDefault get the querystring of the url, return default value if nil

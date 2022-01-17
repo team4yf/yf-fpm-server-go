@@ -46,13 +46,7 @@ type IBizParam interface {
 //BizParam method param
 type BizParam map[string]interface{}
 
-// type BizParam struct {
-// 	__pre__    map[int]interface{}
-// 	__result__ interface{} `json:"__result__,omitempty"`
-// 	__post__   map[int]interface{}
-// }
-
-//Convert 将参数转换成实体对象
+//Convert convert args to specific type
 func (p *BizParam) Convert(obj interface{}) error {
 	return utils.Interface2Struct(p, &obj)
 }
