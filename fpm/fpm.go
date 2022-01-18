@@ -325,7 +325,7 @@ func initUserModule(fpm *Fpm) {
 			err = errors.New("NO_USER_LOGIN_FILTER")
 			return
 		}
-		data = GenerateToken(user, "api", 7200)
+		data = GenerateToken(user, "api", fpm.GetConfig("jwt.expired").(int))
 		return
 	}
 	fpm.AddBizModule("user", &bizModule)
@@ -386,7 +386,7 @@ func initOauth2(fpm *Fpm) {
 			return
 		}
 		scope := querys["scope"]
-		token := GenerateToken(id, scope, 7200)
+		token := GenerateToken(id, scope, fpm.GetConfig("jwt.expired").(int))
 		c.JSON(token)
 	}).Methods("GET")
 }
