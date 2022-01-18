@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/team4yf/fpm-go-pkg/log"
+	"github.com/team4yf/yf-fpm-server-go/ctx"
 	"github.com/team4yf/yf-fpm-server-go/errno"
 	"github.com/team4yf/yf-fpm-server-go/fpm"
 )
@@ -47,7 +48,7 @@ func main() {
 	}
 	app.AddBizModule("foo", &bizModule)
 
-	app.AddFilter("user.login", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam) (bool, interface{}, error) {
+	app.AddFilter("user.login", "before", func(app *fpm.Fpm, biz string, args *fpm.BizParam, c *ctx.Ctx) (bool, interface{}, error) {
 		return true, "userId", errors.New("login failed")
 	}, 1)
 

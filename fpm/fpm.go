@@ -112,7 +112,7 @@ type Plugin struct {
 }
 
 //FilterHandler the hook handler
-type FilterHandler func(fpm *Fpm, biz string, args *BizParam) (bool, interface{}, error)
+type FilterHandler func(fpm *Fpm, biz string, args *BizParam, ctx *ctx.Ctx) (bool, interface{}, error)
 
 //MessageHandler message handler
 type MessageHandler func(topic string, data interface{})
@@ -308,7 +308,7 @@ func userAuth(c *ctx.Ctx, fpm *Fpm) {
 	param := BizParam{}
 	c.ParseBody(&param)
 
-	data, err := fpm.Execute(fmt.Sprintf("user.%s", method), &param)
+	data, err := fpm.Execute(fmt.Sprintf("user.%s", method), &param, c)
 	if err != nil {
 		c.BizError(errno.Wrap(err))
 		return
@@ -404,7 +404,7 @@ func biz(c *ctx.Ctx, fpm *Fpm) {
 		utils.Interface2Struct(querys, &param)
 	}
 
-	data, err := fpm.Execute(method, &param)
+	data, err := fpm.Execute(method, &param, c)
 	if err != nil {
 		c.BizError(errno.Wrap(err))
 		return
@@ -437,7 +437,7 @@ func api(c *ctx.Ctx, fpm *Fpm) {
 		data.Param = &p
 	}
 
-	result, err := fpm.Execute(method, data.Param)
+	result, err := fpm.Execute(method, data.Param, c)
 	if err != nil {
 		c.BizError(errno.Wrap(err))
 		return
@@ -635,14 +635,14 @@ func (fpm *Fpm) runHook(hookName string) {
 }
 
 //runFilter run filter functions
-func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam) (bool, error) {
+func (fpm *Fpm) runFilter(filterName string, biz string, args *BizParam, ctx *ctx.Ctx) (bool, error) {
 	filters, exists := fpm.filters[filterName]
 	if !exists || len(filters) < 1 {
 		//No filters
 		return true, nil
 	}
 	for _, filter := range filters {
-		ok, result, err := filter.f(fpm, biz, args)
+		ok, result, err := filter.f(fpm, biz, args, ctx)
 		if !ok {
 			return false, err
 		}
@@ -676,7 +676,7 @@ func (fpm *Fpm) AddHook(hookName string, handler HookHandler, priority int) {
 }
 
 //Execute execute biz function
-func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error) {
+func (fpm *Fpm) Execute(biz string, args *BizParam, ctx *ctx.Ctx) (data interface{}, err error) {
 	defer func() {
 		if err != nil {
 			incBizExecuteVec(biz, "fail")
@@ -685,7 +685,7 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error
 		}
 	}()
 	ok := false
-	if ok, err = fpm.runFilter("_"+biz+"_before", biz, args); !ok {
+	if ok, err = fpm.runFilter("_"+biz+"_before", biz, args, ctx); !ok {
 		return
 	}
 	bizPath := strings.Split(biz, ".")
@@ -706,7 +706,7 @@ func (fpm *Fpm) Execute(biz string, args *BizParam) (data interface{}, err error
 		return
 	}
 	args.SetResult(data)
-	if ok, err = fpm.runFilter("_"+biz+"_after", biz, args); !ok {
+	if ok, err = fpm.runFilter("_"+biz+"_after", biz, args, ctx); !ok {
 		log.Errorf("run _%s_after error: %v", biz, err)
 	}
 	if data == nil {
