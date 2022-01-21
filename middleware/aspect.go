@@ -42,7 +42,7 @@ func AspectLog(aspectLogConfig *AspectLogConfig) func(h http.Handler) http.Handl
 			var requestData string
 			contentType := r.Header.Get("Content-Type")
 			if r.Method == "POST" {
-				if strings.Contains(contentType, "application/json") {
+				if strings.Contains(contentType, "json") {
 
 					if r.Body != nil {
 						data, _ := ioutil.ReadAll(r.Body)
