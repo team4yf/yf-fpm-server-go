@@ -26,4 +26,6 @@ type Database interface {
 	Raws(sql string, iterator func() interface{}, appender func(interface{})) error
 
 	Transaction(func(Database) error) error
+
+	GetDB() (interface{}, error)
 }
